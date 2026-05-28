@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compensation Analytics Dashboard | Vo Tran Hoang Chau</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --cream: #fbf7ef;
+      --sand: #e5dac8;
+      --tan: #c9a56f;
+      --caramel: #7a521b;
+      --espresso: #2a1b14;
+      --ink: #201814;
+      --muted: #756a5f;
+      --white: #fffdfa;
+      --line: rgba(42, 27, 20, 0.14);
+      --danger: #9b3d21;
+      --green: #4f6b3d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    main { max-width: 1240px; margin: 0 auto; padding: 28px 18px 48px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 320px;
+      padding: 48px;
+      border-radius: 36px 36px 8px 8px;
+      background: linear-gradient(135deg, var(--espresso) 0%, #382318 100%);
+      color: var(--white);
+    }
+    .hero::before, .hero::after {
+      content: "";
+      position: absolute;
+      background: var(--sand);
+      opacity: .95;
+      border-radius: 42px 42px 0 0;
+    }
+    .hero::before { width: 44%; height: 92px; right: 11%; top: 0; }
+    .hero::after { width: 22%; height: 116px; right: 3%; top: 34px; }
+    .eyebrow {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      color: #eadfcd;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .spark { color: var(--tan); font-size: 22px; line-height: 1; }
+    h1 {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      margin: 26px 0 14px;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: clamp(48px, 9vw, 104px);
+      line-height: .92;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .script {
+      display: block;
+      color: var(--tan);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-size: .58em;
+      font-weight: 400;
+      text-transform: none;
+    }
+    .hero p {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0;
+      color: #f4eadc;
+      font-size: clamp(17px, 2vw, 23px);
+      line-height: 1.45;
+    }
+    .grid { display: grid; gap: 18px; }
+    .kpis {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: 0 18px 60px rgba(42, 27, 20, .07);
+    }
+    .kpi { padding: 20px; background: var(--sand); min-height: 145px; }
+    .kpi strong {
+      display: block;
+      margin-bottom: 8px;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: clamp(28px, 3.4vw, 46px);
+      line-height: 1;
+    }
+    .kpi span { color: var(--muted); font-size: 14px; line-height: 1.35; }
+    .section {
+      display: grid;
+      grid-template-columns: .72fr 1.28fr;
+      gap: 24px;
+      margin-top: 24px;
+      align-items: stretch;
+    }
+    .section-title {
+      padding: 30px;
+      background: var(--sand);
+      border-radius: 8px;
+    }
+    h2 {
+      margin: 0 0 16px;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: clamp(40px, 7vw, 74px);
+      line-height: .94;
+      text-transform: uppercase;
+    }
+    h2 em {
+      display: block;
+      color: var(--caramel);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: .72em;
+      font-weight: 400;
+      text-transform: none;
+    }
+    .section-title p, .note p { color: var(--muted); line-height: 1.65; margin: 0; }
+    .panel { padding: 24px; }
+    .panel h3 { margin: 0 0 8px; font-size: 22px; }
+    .panel p.subtext { margin: 0 0 18px; color: var(--muted); line-height: 1.5; }
+    .chart-box { position: relative; min-height: 330px; }
+    .chart-box.tall { min-height: 430px; }
+    .chart-box.compact { min-height: 280px; }
+    .two-col { grid-template-columns: 1fr 1fr; }
+    .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .range-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .range-card {
+      padding: 18px;
+      border-radius: 8px;
+      background: var(--espresso);
+      color: var(--white);
+      min-height: 134px;
+    }
+    .range-card span, .range-card small { color: #e7ddcf; }
+    .range-card strong {
+      display: block;
+      margin: 14px 0 10px;
+      color: var(--tan);
+      font-size: 28px;
+    }
+    .callout {
+      padding: 24px;
+      background: var(--espresso);
+      color: var(--white);
+    }
+    .callout strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--tan);
+      font-size: 26px;
+    }
+    .callout span { color: #e7ddcf; line-height: 1.55; }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--white);
+      color: var(--espresso);
+      padding: 0 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button.active { background: var(--espresso); color: var(--white); }
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 860px;
+    }
+    th, td {
+      padding: 13px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+    }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    th[data-sort] { cursor: pointer; user-select: none; }
+    th[data-sort]::after {
+      content: "sort";
+      display: inline-block;
+      margin-left: 6px;
+      color: rgba(117, 106, 95, .65);
+      font-size: 11px;
+    }
+    th.sorted-asc::after { content: "asc"; color: var(--caramel); }
+    th.sorted-desc::after { content: "desc"; color: var(--caramel); }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #eee6da;
+      color: var(--espresso);
+      font-weight: 800;
+    }
+    .badge.risk { background: #f0d5c9; color: var(--danger); }
+    .footer {
+      margin-top: 24px;
+      padding: 26px;
+      border-radius: 8px;
+      background: var(--sand);
+      color: var(--muted);
+    }
+    @media (max-width: 980px) {
+      .kpis, .section, .two-col, .three-col, .range-grid { grid-template-columns: 1fr; }
+      .chart-box, .chart-box.compact, .chart-box.tall { min-height: 300px; }
+    }
+    @media (max-width: 700px) {
+      main { padding: 16px 12px 36px; }
+      .hero { padding: 34px 24px; border-radius: 28px 28px 8px 8px; }
+      .panel, .section-title { padding: 20px; }
+      .kpi { min-height: 0; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <h1><span class="script">Compensation</span> Review Dashboard</h1>
+    <p>Python-generated compensation analytics for a Vietnam tech company preparing merit, bonus, pay equity, and salary band decisions.</p>
+  </section>
+
+  <section class="grid kpis" aria-label="Key compensation metrics">
+    <div class="card kpi"><strong>720</strong><span>employee records across 6 departments, 5 levels, and 4 locations</span></div>
+    <div class="card kpi"><strong>25.6B</strong><span>modeled monthly payroll; annualized at 307.7B</span></div>
+    <div class="card kpi"><strong>1.1B</strong><span>projected monthly merit spend from performance rules</span></div>
+    <div class="card kpi"><strong>20.1%</strong><span>employees outside the 0.88-1.16 compa-ratio range</span></div>
+    <div class="card kpi"><strong>-0.8%</strong><span>overall unadjusted gender pay gap signal</span></div>
+    <div class="card kpi"><strong>2.2B</strong><span>estimated annual cost to bring below-range employees to 0.88 compa-ratio</span></div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">
+      <h2><em>Executive</em> Overview</h2>
+      <p>Start with spend concentration and budget pressure, then move into risk: outliers, gender gap, high performers below range, and location premiums.</p>
+    </div>
+    <div class="card panel">
+      <h3>Average Salary by Department</h3>
+      <p class="subtext">Shows where cash compensation is structurally concentrated before merit decisions.</p>
+      <div class="chart-box"><canvas id="salaryChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid two-col" style="margin-top:24px">
+    <div class="card panel">
+      <h3>Merit Budget Utilization</h3>
+      <p class="subtext">Compares modeled merit spend against department budget. Low utilization can fund targeted equity corrections.</p>
+      <div class="chart-box compact"><canvas id="meritChart"></canvas></div>
+    </div>
+    <div class="card panel">
+      <h3>Pay Equity Review Rate</h3>
+      <p class="subtext">Dynamic axis scaling prevents the review-rate bars from understating risk.</p>
+      <div class="chart-box compact"><canvas id="reviewChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid three-col" style="margin-top:24px">
+    <div class="card callout"><strong>Product</strong><span>has the highest review rate at 24.5% and should be first in the equity audit queue.</span></div>
+    <div class="card callout"><strong>HR</strong><span>has the largest unadjusted gender pay gap signal at 11.7%.</span></div>
+    <div class="card callout"><strong>62</strong><span>high performers are below the target compa-ratio floor and may need retention-focused adjustments.</span></div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">
+      <h2><em>Equity</em> Risk</h2>
+      <p>Compa-ratio outliers are split into below-range and above-range populations. Below-range cases drive immediate correction cost; above-range cases inform band and promotion calibration.</p>
+    </div>
+    <div class="card panel">
+      <h3>Compa-Ratio Outliers by Department</h3>
+      <p class="subtext">Stacked counts show whether risk is concentrated in a few teams or broad-based.</p>
+      <div class="chart-box"><canvas id="outlierChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid two-col" style="margin-top:24px">
+    <div class="card panel">
+      <h3>Compa-Ratio Distribution</h3>
+      <p class="subtext">The center of gravity should sit near 1.00; tails highlight salary band and equity pressure.</p>
+      <div class="chart-box compact"><canvas id="compaHistogram"></canvas></div>
+    </div>
+    <div class="card panel">
+      <h3>Gender Pay Gap by Department</h3>
+      <p class="subtext">Grouped bars compare average salary by gender. Treat this as a triage view before level-adjusted regression.</p>
+      <div class="chart-box compact"><canvas id="genderChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">
+      <h2><em>Performance</em> Pay</h2>
+      <p>Compensation decisions should protect strong performers who sit below range, while ensuring bonus and merit outcomes are visibly differentiated by rating.</p>
+    </div>
+    <div class="card panel">
+      <h3>Performance Rating vs Compa-Ratio</h3>
+      <p class="subtext">Each point is an employee, colored by department. The vertical lines mark the pay equity review range.</p>
+      <div class="chart-box tall"><canvas id="scatterChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid two-col" style="margin-top:24px">
+    <div class="card panel">
+      <h3>Bonus and Merit Differentiation</h3>
+      <p class="subtext">Average payout rates should step up with performance rating; flat lines would signal weak pay-for-performance design.</p>
+      <div class="chart-box compact"><canvas id="performanceChart"></canvas></div>
+    </div>
+    <div class="card panel">
+      <h3>What Would It Cost to Fix?</h3>
+      <p class="subtext">Annualized correction estimate for employees below 0.88 compa-ratio, by department.</p>
+      <div class="chart-box compact"><canvas id="fixCostChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">
+      <h2><em>Location</em> Strategy</h2>
+      <p>Location views help HR and Finance test whether geographic salary differentials are still aligned with market premiums and remote work policy.</p>
+    </div>
+    <div class="card panel">
+      <h3>Location Breakdown</h3>
+      <p class="subtext">Salary, headcount, and compa-ratio are analyzed together so location premiums do not hide outlier risk.</p>
+      <div class="chart-box"><canvas id="locationChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid two-col" style="margin-top:24px">
+    <div class="card panel">
+      <h3>Headcount by Department and Level</h3>
+      <p class="subtext">Composition matters: a team with many senior employees can have high spend without necessarily being over budget.</p>
+      <div class="chart-box"><canvas id="headcountChart"></canvas></div>
+    </div>
+    <div class="card panel">
+      <h3>Salary Bands by Level</h3>
+      <p class="subtext">P25, median, and P75 summarize internal ranges before salary band refresh decisions.</p>
+      <div class="grid range-grid">
+        
+            <div class="range-card">
+              <span>L1 Analyst</span>
+              <strong>22M</strong>
+              <small>P25 18M - P75 27M</small>
+            </div>
+            
+            <div class="range-card">
+              <span>L2 Associate</span>
+              <strong>27M</strong>
+              <small>P25 23M - P75 34M</small>
+            </div>
+            
+            <div class="range-card">
+              <span>L3 Specialist</span>
+              <strong>35M</strong>
+              <small>P25 31M - P75 44M</small>
+            </div>
+            
+            <div class="range-card">
+              <span>L4 Senior</span>
+              <strong>46M</strong>
+              <small>P25 38M - P75 56M</small>
+            </div>
+            
+            <div class="range-card">
+              <span>L5 Manager</span>
+              <strong>57M</strong>
+              <small>P25 51M - P75 76M</small>
+            </div>
+            
+      </div>
+    </div>
+  </section>
+
+  <section class="card panel" style="margin-top:24px">
+    <h3>Department Drilldown</h3>
+    <p class="subtext">Filter by department and click any column header to sort. Risk badges highlight review rates above 25%.</p>
+    <div class="filters" id="filters"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="department">Department</th>
+            <th data-sort="headcount">Headcount</th>
+            <th data-sort="avg_salary">Avg Salary</th>
+            <th data-sort="avg_rating">Avg Rating</th>
+            <th data-sort="avg_compa">Avg Compa</th>
+            <th data-sort="budget_utilization">Merit Budget</th>
+            <th data-sort="review_rate">Review Rate</th>
+            <th data-sort="below_range">Below</th>
+            <th data-sort="above_range">Above</th>
+            <th data-sort="fix_cost">Fix Cost</th>
+          </tr>
+        </thead>
+        <tbody id="deptRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="footer">
+    <strong>Dataset note:</strong> This dashboard uses simulated HR compensation data generated for portfolio demonstration only. No confidential employer, client, or payroll data is used.
+  </section>
+</main>
+<script>
+  const departments = [{"department": "Engineering", "headcount": 161, "avg_salary": 47263799, "avg_rating": 3.51, "avg_compa": 1.0, "bonus": 516913024, "merit": 306742202, "budget": 4400000000, "budget_utilization": 7.0, "review_rate": 19.9, "below_range": 22, "above_range": 9, "fix_cost": 757410648}, {"department": "Finance", "headcount": 86, "avg_salary": 35323658, "avg_rating": 3.65, "avg_compa": 1.02, "bonus": 223544480, "merit": 137252422, "budget": 1550000000, "budget_utilization": 8.9, "review_rate": 17.4, "below_range": 6, "above_range": 9, "fix_cost": 126460968}, {"department": "HR", "headcount": 91, "avg_salary": 29074206, "avg_rating": 3.58, "avg_compa": 1.0, "bonus": 180619511, "merit": 112210573, "budget": 1050000000, "budget_utilization": 10.7, "review_rate": 19.8, "below_range": 13, "above_range": 5, "fix_cost": 229624884}, {"department": "Operations", "headcount": 136, "avg_salary": 27930813, "avg_rating": 3.55, "avg_compa": 1.0, "bonus": 256676439, "merit": 158639357, "budget": 2200000000, "budget_utilization": 7.2, "review_rate": 18.4, "below_range": 19, "above_range": 6, "fix_cost": 273205008}, {"department": "Product", "headcount": 106, "avg_salary": 39427500, "avg_rating": 3.65, "avg_compa": 0.99, "bonus": 299813876, "merit": 183392624, "budget": 2850000000, "budget_utilization": 6.4, "review_rate": 24.5, "below_range": 20, "above_range": 6, "fix_cost": 400739436}, {"department": "Sales", "headcount": 140, "avg_salary": 31228269, "avg_rating": 3.56, "avg_compa": 1.0, "bonus": 299757053, "merit": 181349592, "budget": 3150000000, "budget_utilization": 5.8, "review_rate": 20.7, "below_range": 23, "above_range": 6, "fix_cost": 425536740}];
+  const locations = [{"location": "Ho Chi Minh City", "headcount": 367, "avg_salary": 37255727, "avg_compa": 1.0, "review_rate": 21.5, "fix_cost": 1437018840}, {"location": "Ha Noi", "headcount": 191, "avg_salary": 34884117, "avg_compa": 1.0, "review_rate": 19.9, "fix_cost": 471828780}, {"location": "Da Nang", "headcount": 81, "avg_salary": 33630634, "avg_compa": 0.99, "review_rate": 17.3, "fix_cost": 181718292}, {"location": "Remote", "headcount": 81, "avg_salary": 31890401, "avg_compa": 1.01, "review_rate": 17.3, "fix_cost": 122411772}];
+  const genderByDepartment = [{"department": "Product", "Female": 39495056, "Male": 39342697, "gap": -0.4}, {"department": "Engineering", "Female": 46469058, "Male": 48246187, "gap": 3.7}, {"department": "Sales", "Female": 31234794, "Male": 31220059, "gap": -0.0}, {"department": "Operations", "Female": 29493952, "Male": 26581802, "gap": -11.0}, {"department": "Finance", "Female": 35894518, "Male": 34360333, "gap": -4.5}, {"department": "HR", "Female": 27582197, "Male": 31251734, "gap": 11.7}];
+  const outliersByDepartment = [{"department": "Product", "Below range": 20, "In range": 80, "Above range": 6}, {"department": "Engineering", "Below range": 22, "In range": 130, "Above range": 9}, {"department": "Sales", "Below range": 23, "In range": 111, "Above range": 6}, {"department": "Operations", "Below range": 19, "In range": 111, "Above range": 6}, {"department": "Finance", "Below range": 6, "In range": 71, "Above range": 9}, {"department": "HR", "Below range": 13, "In range": 73, "Above range": 5}];
+  const headcountByLevel = [{"department": "Product", "L1 Analyst": 27, "L2 Associate": 25, "L3 Specialist": 20, "L4 Senior": 25, "L5 Manager": 9}, {"department": "Engineering", "L1 Analyst": 36, "L2 Associate": 49, "L3 Specialist": 45, "L4 Senior": 20, "L5 Manager": 11}, {"department": "Sales", "L1 Analyst": 34, "L2 Associate": 38, "L3 Specialist": 35, "L4 Senior": 18, "L5 Manager": 15}, {"department": "Operations", "L1 Analyst": 25, "L2 Associate": 44, "L3 Specialist": 31, "L4 Senior": 25, "L5 Manager": 11}, {"department": "Finance", "L1 Analyst": 17, "L2 Associate": 26, "L3 Specialist": 26, "L4 Senior": 15, "L5 Manager": 2}, {"department": "HR", "L1 Analyst": 18, "L2 Associate": 22, "L3 Specialist": 31, "L4 Senior": 14, "L5 Manager": 6}];
+  const performance = [{"rating": 2, "avg_compa": 1.0, "avg_bonus_pct": 2.1, "avg_merit_pct": 0.7}, {"rating": 3, "avg_compa": 1.0, "avg_bonus_pct": 4.8, "avg_merit_pct": 2.6}, {"rating": 4, "avg_compa": 1.0, "avg_bonus_pct": 8.1, "avg_merit_pct": 5.2}, {"rating": 5, "avg_compa": 0.98, "avg_bonus_pct": 12.7, "avg_merit_pct": 8.2}];
+  const compaBins = [{"label": "<0.80", "count": 22}, {"label": "0.80-0.87", "count": 81}, {"label": "0.88-0.99", "count": 253}, {"label": "1.00-1.07", "count": 193}, {"label": "1.08-1.16", "count": 134}, {"label": ">1.16", "count": 37}];
+  const scatterRows = [{"x": 0.835, "y": 4.931315854247995, "department": "Operations", "employee": "EMP0001", "salary": 15444199, "bonus": 1611555, "gender": "Female"}, {"x": 1.151, "y": 4.072304030182709, "department": "Product", "employee": "EMP0002", "salary": 28181448, "bonus": 2018164, "gender": "Female"}, {"x": 1.054, "y": 4.981022548785867, "department": "Finance", "employee": "EMP0003", "salary": 21171544, "bonus": 2473466, "gender": "Male"}, {"x": 0.865, "y": 4.98381735951324, "department": "Product", "employee": "EMP0004", "salary": 45571960, "bonus": 5419724, "gender": "Male"}, {"x": 0.968, "y": 2.948481728124714, "department": "Finance", "employee": "EMP0005", "salary": 31857665, "bonus": 1345499, "gender": "Male"}, {"x": 1.079, "y": 3.074407889569852, "department": "Engineering", "employee": "EMP0006", "salary": 34926455, "bonus": 1455541, "gender": "Male"}, {"x": 1.092, "y": 5.058482481716773, "department": "Operations", "employee": "EMP0007", "salary": 33088400, "bonus": 4367668, "gender": "Male"}, {"x": 1.019, "y": 2.9342701292282487, "department": "Operations", "employee": "EMP0008", "salary": 34122320, "bonus": 1374262, "gender": "Female"}, {"x": 0.938, "y": 3.056375333318976, "department": "Finance", "employee": "EMP0009", "salary": 26741732, "bonus": 1100842, "gender": "Female"}, {"x": 1.345, "y": 3.9460705094200406, "department": "Engineering", "employee": "EMP0010", "salary": 63336231, "bonus": 4325198, "gender": "Female"}, {"x": 0.712, "y": 5.044718807223315, "department": "Finance", "employee": "EMP0011", "salary": 21729630, "bonus": 3108184, "gender": "Female"}, {"x": 1.09, "y": 3.965589742239914, "department": "Operations", "employee": "EMP0012", "salary": 30863170, "bonus": 2426207, "gender": "Female"}, {"x": 1.064, "y": 5.040409370606461, "department": "Finance", "employee": "EMP0013", "salary": 30334444, "bonus": 4002553, "gender": "Female"}, {"x": 1.097, "y": 4.024650287811917, "department": "Engineering", "employee": "EMP0014", "salary": 71438905, "bonus": 4685271, "gender": "Male"}, {"x": 1.044, "y": 4.93929631745642, "department": "Finance", "employee": "EMP0015", "salary": 53675122, "bonus": 6671792, "gender": "Female"}, {"x": 0.979, "y": 3.998535215617538, "department": "Operations", "employee": "EMP0016", "salary": 38964667, "bonus": 3027326, "gender": "Female"}, {"x": 0.895, "y": 4.989177347106802, "department": "Sales", "employee": "EMP0017", "salary": 30514962, "bonus": 3841187, "gender": "Female"}, {"x": 1.02, "y": 4.049016511346936, "department": "Engineering", "employee": "EMP0018", "salary": 39409578, "bonus": 3577959, "gender": "Female"}, {"x": 0.859, "y": 4.969616209153812, "department": "Engineering", "employee": "EMP0019", "salary": 45554847, "bonus": 6342646, "gender": "Female"}, {"x": 1.018, "y": 4.029593910698311, "department": "Engineering", "employee": "EMP0020", "salary": 32929460, "bonus": 2538158, "gender": "Female"}, {"x": 0.985, "y": 2.9410058669555714, "department": "Finance", "employee": "EMP0021", "salary": 30062371, "bonus": 1746072, "gender": "Female"}, {"x": 1.247, "y": 4.026483247394695, "department": "Finance", "employee": "EMP0022", "salary": 48788907, "bonus": 4413487, "gender": "Male"}, {"x": 1.058, "y": 3.0531284598916253, "department": "Sales", "employee": "EMP0023", "salary": 22000187, "bonus": 1201249, "gender": "Female"}, {"x": 0.937, "y": 3.0020245161054984, "department": "Sales", "employee": "EMP0024", "salary": 49293823, "bonus": 2919069, "gender": "Male"}, {"x": 0.996, "y": 2.9983396857326534, "department": "Sales", "employee": "EMP0025", "salary": 33958760, "bonus": 2004228, "gender": "Male"}, {"x": 1.109, "y": 3.061666086182701, "department": "Engineering", "employee": "EMP0026", "salary": 54972865, "bonus": 2500200, "gender": "Female"}, {"x": 0.87, "y": 2.9962303498607628, "department": "Sales", "employee": "EMP0027", "salary": 51512280, "bonus": 2189268, "gender": "Male"}, {"x": 1.068, "y": 5.010089132309366, "department": "Operations", "employee": "EMP0028", "salary": 19751302, "bonus": 2237033, "gender": "Male"}, {"x": 0.956, "y": 3.9876912928703097, "department": "Finance", "employee": "EMP0029", "salary": 49174851, "bonus": 4652776, "gender": "Female"}, {"x": 1.036, "y": 5.04103850295846, "department": "Product", "employee": "EMP0030", "salary": 58430880, "bonus": 6155798, "gender": "Male"}, {"x": 0.981, "y": 4.049759097538276, "department": "Engineering", "employee": "EMP0031", "salary": 48628833, "bonus": 4481638, "gender": "Female"}, {"x": 0.845, "y": 3.0182188453511665, "department": "Product", "employee": "EMP0032", "salary": 28273583, "bonus": 1513507, "gender": "Female"}, {"x": 0.922, "y": 3.9894569476016595, "department": "Sales", "employee": "EMP0033", "salary": 19169511, "bonus": 1581011, "gender": "Male"}, {"x": 0.819, "y": 2.988162735811409, "department": "Product", "employee": "EMP0034", "salary": 24343434, "bonus": 1003880, "gender": "Male"}, {"x": 1.209, "y": 4.926470094339063, "department": "Finance", "employee": "EMP0035", "salary": 62176753, "bonus": 9252541, "gender": "Male"}, {"x": 0.917, "y": 4.974679175583448, "department": "Finance", "employee": "EMP0036", "salary": 20458463, "bonus": 2875181, "gender": "Female"}, {"x": 1.2, "y": 2.9941639800982953, "department": "Finance", "employee": "EMP0037", "salary": 24096776, "bonus": 1027240, "gender": "Male"}, {"x": 0.757, "y": 2.9558768339724666, "department": "Engineering", "employee": "EMP0038", "salary": 24485479, "bonus": 1457590, "gender": "Female"}, {"x": 0.995, "y": 5.0297978457375, "department": "HR", "employee": "EMP0039", "salary": 17012573, "bonus": 2070910, "gender": "Female"}, {"x": 0.993, "y": 3.9448111521371216, "department": "Engineering", "employee": "EMP0040", "salary": 49234524, "bonus": 3202742, "gender": "Female"}, {"x": 1.032, "y": 3.999251560601328, "department": "Sales", "employee": "EMP0041", "salary": 32865632, "bonus": 2461833, "gender": "Male"}, {"x": 1.061, "y": 3.020729533013374, "department": "Finance", "employee": "EMP0042", "salary": 41518684, "bonus": 1585274, "gender": "Female"}, {"x": 1.132, "y": 2.0039484454202294, "department": "HR", "employee": "EMP0043", "salary": 31712238, "bonus": 499096, "gender": "Male"}, {"x": 1.096, "y": 4.966512483916544, "department": "Sales", "employee": "EMP0044", "salary": 37369892, "bonus": 3895429, "gender": "Female"}, {"x": 1.012, "y": 3.989976883028964, "department": "Operations", "employee": "EMP0045", "salary": 20103132, "bonus": 1321434, "gender": "Male"}, {"x": 1.055, "y": 4.065153233768397, "department": "Sales", "employee": "EMP0046", "salary": 47227602, "bonus": 3770242, "gender": "Female"}, {"x": 1.072, "y": 2.9964178184275547, "department": "Operations", "employee": "EMP0047", "salary": 16669452, "bonus": 982650, "gender": "Male"}, {"x": 0.845, "y": 4.943777046184762, "department": "Product", "employee": "EMP0048", "salary": 23793764, "bonus": 3087779, "gender": "Female"}, {"x": 0.879, "y": 4.940446359734909, "department": "HR", "employee": "EMP0049", "salary": 25924135, "bonus": 3556345, "gender": "Female"}, {"x": 0.979, "y": 3.064464578986655, "department": "Engineering", "employee": "EMP0050", "salary": 37843782, "bonus": 1397839, "gender": "Male"}, {"x": 1.155, "y": 4.054646072684114, "department": "Engineering", "employee": "EMP0051", "salary": 44644149, "bonus": 3628602, "gender": "Female"}, {"x": 1.116, "y": 4.003694729122796, "department": "Engineering", "employee": "EMP0052", "salary": 40982424, "bonus": 3131526, "gender": "Male"}, {"x": 0.998, "y": 2.967277061424894, "department": "Engineering", "employee": "EMP0053", "salary": 44507738, "bonus": 2229006, "gender": "Male"}, {"x": 0.927, "y": 3.9276365239036015, "department": "Engineering", "employee": "EMP0054", "salary": 38314058, "bonus": 3027642, "gender": "Female"}, {"x": 1.027, "y": 2.9322452031580233, "department": "Operations", "employee": "EMP0055", "salary": 18984128, "bonus": 883568, "gender": "Male"}, {"x": 1.126, "y": 3.92721518458535, "department": "Engineering", "employee": "EMP0056", "salary": 36449314, "bonus": 2645059, "gender": "Male"}, {"x": 0.845, "y": 3.9372211474307197, "department": "Product", "employee": "EMP0057", "salary": 32196734, "bonus": 2821303, "gender": "Female"}, {"x": 0.847, "y": 2.9879861633932823, "department": "Engineering", "employee": "EMP0058", "salary": 27410496, "bonus": 1074347, "gender": "Female"}, {"x": 1.094, "y": 2.9351174979980663, "department": "Operations", "employee": "EMP0059", "salary": 17012148, "bonus": 883503, "gender": "Male"}, {"x": 1.152, "y": 4.025736840629947, "department": "Sales", "employee": "EMP0060", "salary": 39264899, "bonus": 3553819, "gender": "Male"}, {"x": 0.91, "y": 3.010956513658553, "department": "Product", "employee": "EMP0061", "salary": 57099110, "bonus": 2485569, "gender": "Female"}, {"x": 0.969, "y": 3.9605408529704302, "department": "Finance", "employee": "EMP0062", "salary": 20542936, "bonus": 1787520, "gender": "Male"}, {"x": 0.953, "y": 2.9607776326961135, "department": "Engineering", "employee": "EMP0063", "salary": 62057400, "bonus": 3493387, "gender": "Female"}, {"x": 0.931, "y": 1.9330831298454365, "department": "Product", "employee": "EMP0064", "salary": 52519888, "bonus": 1419038, "gender": "Female"}, {"x": 0.916, "y": 2.0005511307910306, "department": "Engineering", "employee": "EMP0065", "salary": 63782900, "bonus": 1847233, "gender": "Male"}, {"x": 0.899, "y": 3.9382296785599187, "department": "Operations", "employee": "EMP0066", "salary": 17856423, "bonus": 1210516, "gender": "Male"}, {"x": 0.978, "y": 4.025852531746482, "department": "Operations", "employee": "EMP0067", "salary": 21586287, "bonus": 1617325, "gender": "Female"}, {"x": 1.07, "y": 3.948728351338121, "department": "Engineering", "employee": "EMP0068", "salary": 44248502, "bonus": 3518905, "gender": "Female"}, {"x": 1.01, "y": 2.9491533015285847, "department": "HR", "employee": "EMP0069", "salary": 31872915, "bonus": 1126826, "gender": "Female"}, {"x": 1.087, "y": 2.9828731740060555, "department": "Engineering", "employee": "EMP0070", "salary": 93555437, "bonus": 5315632, "gender": "Male"}, {"x": 0.781, "y": 4.933326490421595, "department": "Sales", "employee": "EMP0071", "salary": 20751325, "bonus": 2490893, "gender": "Female"}, {"x": 1.331, "y": 3.0602808555416807, "department": "Operations", "employee": "EMP0072", "salary": 24618601, "bonus": 1332139, "gender": "Male"}, {"x": 1.077, "y": 4.967623602526124, "department": "Finance", "employee": "EMP0073", "salary": 30711554, "bonus": 3540090, "gender": "Female"}, {"x": 1.157, "y": 3.0139533421088394, "department": "Operations", "employee": "EMP0074", "salary": 31123840, "bonus": 1224578, "gender": "Female"}, {"x": 1.171, "y": 3.9927997037856033, "department": "Product", "employee": "EMP0075", "salary": 36634574, "bonus": 2880245, "gender": "Female"}, {"x": 0.953, "y": 4.027241578638492, "department": "HR", "employee": "EMP0076", "salary": 36934311, "bonus": 3118328, "gender": "Male"}, {"x": 0.857, "y": 3.019809663066666, "department": "Finance", "employee": "EMP0077", "salary": 20473099, "bonus": 780206, "gender": "Female"}, {"x": 1.015, "y": 2.9624119023577387, "department": "Operations", "employee": "EMP0078", "salary": 49947409, "bonus": 2150638, "gender": "Female"}, {"x": 0.868, "y": 4.074675140283241, "department": "Product", "employee": "EMP0079", "salary": 54458906, "bonus": 3980147, "gender": "Male"}, {"x": 1.133, "y": 4.059415170919903, "department": "Operations", "employee": "EMP0080", "salary": 25008664, "bonus": 1994485, "gender": "Male"}, {"x": 1.148, "y": 2.9499506774080615, "department": "Engineering", "employee": "EMP0081", "salary": 44373325, "bonus": 2601601, "gender": "Male"}, {"x": 0.976, "y": 3.9496139825322873, "department": "Sales", "employee": "EMP0082", "salary": 25944055, "bonus": 2108676, "gender": "Female"}, {"x": 1.04, "y": 4.0395246910836535, "department": "Engineering", "employee": "EMP0083", "salary": 36165194, "bonus": 3357222, "gender": "Male"}, {"x": 1.076, "y": 3.01664845974364, "department": "Operations", "employee": "EMP0084", "salary": 17659775, "bonus": 861908, "gender": "Male"}, {"x": 0.825, "y": 4.059458527175676, "department": "HR", "employee": "EMP0085", "salary": 34220105, "bonus": 2746716, "gender": "Female"}, {"x": 1.116, "y": 2.9370129053995595, "department": "Finance", "employee": "EMP0086", "salary": 75857812, "bonus": 4322618, "gender": "Male"}, {"x": 1.038, "y": 4.005500160477061, "department": "Engineering", "employee": "EMP0087", "salary": 72336757, "bonus": 5349786, "gender": "Male"}, {"x": 0.87, "y": 2.9209355311333343, "department": "HR", "employee": "EMP0088", "salary": 21398911, "bonus": 992559, "gender": "Female"}, {"x": 1.153, "y": 3.938668521658545, "department": "Engineering", "employee": "EMP0089", "salary": 57167082, "bonus": 4925335, "gender": "Female"}, {"x": 1.001, "y": 3.947477656192542, "department": "Sales", "employee": "EMP0090", "salary": 28699425, "bonus": 2373598, "gender": "Male"}, {"x": 0.889, "y": 3.996339179825977, "department": "Finance", "employee": "EMP0091", "salary": 25345570, "bonus": 1764833, "gender": "Female"}, {"x": 0.827, "y": 4.03068899679791, "department": "HR", "employee": "EMP0092", "salary": 19029063, "bonus": 1453826, "gender": "Male"}, {"x": 1.065, "y": 5.059004883358141, "department": "Operations", "employee": "EMP0093", "salary": 27138380, "bonus": 4067264, "gender": "Female"}, {"x": 1.059, "y": 5.074528609209355, "department": "Sales", "employee": "EMP0094", "salary": 20580415, "bonus": 2105367, "gender": "Male"}, {"x": 0.923, "y": 3.016301990420713, "department": "Engineering", "employee": "EMP0095", "salary": 38162657, "bonus": 1926938, "gender": "Female"}, {"x": 1.198, "y": 2.9978755990300177, "department": "HR", "employee": "EMP0096", "salary": 23081933, "bonus": 1327909, "gender": "Female"}, {"x": 0.926, "y": 4.0189598999179985, "department": "Engineering", "employee": "EMP0097", "salary": 38277200, "bonus": 3458694, "gender": "Male"}, {"x": 1.092, "y": 4.07582750274747, "department": "Sales", "employee": "EMP0098", "salary": 29021936, "bonus": 2737881, "gender": "Male"}, {"x": 0.899, "y": 1.9777166052945403, "department": "Engineering", "employee": "EMP0099", "salary": 44546902, "bonus": 1251015, "gender": "Male"}, {"x": 0.923, "y": 4.027808502868583, "department": "Finance", "employee": "EMP0100", "salary": 36124639, "bonus": 3062482, "gender": "Male"}, {"x": 0.843, "y": 3.03044693669689, "department": "Operations", "employee": "EMP0101", "salary": 31369307, "bonus": 1168611, "gender": "Female"}, {"x": 0.761, "y": 4.98319955802517, "department": "Operations", "employee": "EMP0102", "salary": 14074085, "bonus": 1991816, "gender": "Female"}, {"x": 1.212, "y": 2.9684250653834763, "department": "Finance", "employee": "EMP0103", "salary": 31098947, "bonus": 1197898, "gender": "Male"}, {"x": 0.871, "y": 3.9400143183888363, "department": "Finance", "employee": "EMP0104", "salary": 30255551, "bonus": 1979244, "gender": "Male"}, {"x": 1.049, "y": 3.92222014688349, "department": "Sales", "employee": "EMP0105", "salary": 33421655, "bonus": 2406849, "gender": "Male"}, {"x": 1.108, "y": 1.9379060003947832, "department": "Finance", "employee": "EMP0106", "salary": 38500277, "bonus": 617691, "gender": "Female"}, {"x": 1.045, "y": 2.9225416394424824, "department": "Product", "employee": "EMP0107", "salary": 77943166, "bonus": 3611972, "gender": "Female"}, {"x": 0.957, "y": 3.0752832581856504, "department": "Operations", "employee": "EMP0108", "salary": 50368739, "bonus": 2379101, "gender": "Male"}, {"x": 1.031, "y": 5.057441924842376, "department": "HR", "employee": "EMP0109", "salary": 19856203, "bonus": 2666371, "gender": "Female"}, {"x": 1.07, "y": 2.95347671685352, "department": "HR", "employee": "EMP0110", "salary": 26332471, "bonus": 1357945, "gender": "Female"}, {"x": 0.936, "y": 3.0237797154726436, "department": "Sales", "employee": "EMP0111", "salary": 16370992, "bonus": 886144, "gender": "Female"}, {"x": 0.975, "y": 4.023958372165895, "department": "Engineering", "employee": "EMP0112", "salary": 67923349, "bonus": 4925776, "gender": "Female"}, {"x": 0.97, "y": 2.989726155808079, "department": "Operations", "employee": "EMP0113", "salary": 17926900, "bonus": 650925, "gender": "Male"}, {"x": 1.101, "y": 4.020169464180695, "department": "Sales", "employee": "EMP0114", "salary": 37527788, "bonus": 3503687, "gender": "Male"}, {"x": 1.117, "y": 5.046401845858791, "department": "Finance", "employee": "EMP0115", "salary": 53650091, "bonus": 6442349, "gender": "Female"}, {"x": 1.059, "y": 3.950546312434785, "department": "Sales", "employee": "EMP0116", "salary": 47421868, "bonus": 3983072, "gender": "Female"}, {"x": 0.958, "y": 3.968146859132911, "department": "Engineering", "employee": "EMP0117", "salary": 82444694, "bonus": 7260812, "gender": "Female"}, {"x": 0.937, "y": 2.994148088870246, "department": "Engineering", "employee": "EMP0118", "salary": 38732474, "bonus": 1768877, "gender": "Female"}, {"x": 0.932, "y": 2.9958382540009967, "department": "Engineering", "employee": "EMP0119", "salary": 26769624, "bonus": 1309283, "gender": "Female"}, {"x": 0.945, "y": 3.9234906925159203, "department": "Sales", "employee": "EMP0120", "salary": 25121800, "bonus": 2176347, "gender": "Female"}, {"x": 0.935, "y": 2.9465768789081754, "department": "Operations", "employee": "EMP0121", "salary": 20637938, "bonus": 1158497, "gender": "Female"}, {"x": 0.968, "y": 3.944387558387257, "department": "Operations", "employee": "EMP0122", "salary": 24663258, "bonus": 2078643, "gender": "Male"}, {"x": 0.91, "y": 3.032415696913321, "department": "HR", "employee": "EMP0123", "salary": 37713154, "bonus": 1325717, "gender": "Female"}, {"x": 1.035, "y": 3.0742186993182266, "department": "Sales", "employee": "EMP0124", "salary": 27505548, "bonus": 1251387, "gender": "Male"}, {"x": 1.018, "y": 2.9954382717843386, "department": "Engineering", "employee": "EMP0125", "salary": 45424742, "bonus": 2291494, "gender": "Male"}, {"x": 1.14, "y": 3.0575674312704995, "department": "Engineering", "employee": "EMP0126", "salary": 60446259, "bonus": 3140918, "gender": "Female"}, {"x": 0.976, "y": 2.013636203101432, "department": "Operations", "employee": "EMP0127", "salary": 18044768, "bonus": 229975, "gender": "Male"}, {"x": 0.922, "y": 2.95221414720396, "department": "Engineering", "employee": "EMP0128", "salary": 27894878, "bonus": 1557479, "gender": "Female"}, {"x": 0.896, "y": 4.011108873879254, "department": "Product", "employee": "EMP0129", "salary": 50519759, "bonus": 4152825, "gender": "Female"}, {"x": 0.839, "y": 4.053414165248553, "department": "Sales", "employee": "EMP0130", "salary": 17445207, "bonus": 1575905, "gender": "Female"}, {"x": 0.95, "y": 2.9281475488350988, "department": "Sales", "employee": "EMP0131", "salary": 32391932, "bonus": 1547106, "gender": "Female"}, {"x": 0.817, "y": 2.921259884956674, "department": "Sales", "employee": "EMP0132", "salary": 36566049, "bonus": 1413684, "gender": "Male"}, {"x": 0.873, "y": 4.020865580853974, "department": "Operations", "employee": "EMP0133", "salary": 32472006, "bonus": 2850922, "gender": "Female"}, {"x": 0.884, "y": 3.0340948503396366, "department": "HR", "employee": "EMP0134", "salary": 26066285, "bonus": 956819, "gender": "Male"}, {"x": 1.088, "y": 2.076717910070045, "department": "Engineering", "employee": "EMP0135", "salary": 44963229, "bonus": 1226822, "gender": "Female"}, {"x": 1.095, "y": 4.055778601760511, "department": "Operations", "employee": "EMP0136", "salary": 25879650, "bonus": 2310910, "gender": "Male"}, {"x": 1.045, "y": 3.037932530139281, "department": "Engineering", "employee": "EMP0137", "salary": 43224475, "bonus": 2284754, "gender": "Female"}, {"x": 0.963, "y": 3.0153343280924303, "department": "Engineering", "employee": "EMP0138", "salary": 39810520, "bonus": 1730132, "gender": "Female"}, {"x": 0.962, "y": 4.008688724039825, "department": "Finance", "employee": "EMP0139", "salary": 37670264, "bonus": 3190555, "gender": "Female"}, {"x": 1.167, "y": 2.9665239251101223, "department": "Finance", "employee": "EMP0140", "salary": 33278218, "bonus": 1490829, "gender": "Female"}, {"x": 0.901, "y": 3.9979994421001437, "department": "HR", "employee": "EMP0141", "salary": 22162384, "bonus": 1931745, "gender": "Male"}, {"x": 1.016, "y": 2.9977761536995837, "department": "Sales", "employee": "EMP0142", "salary": 34646943, "bonus": 2033488, "gender": "Female"}, {"x": 1.112, "y": 4.01456628408982, "department": "Engineering", "employee": "EMP0143", "salary": 35983548, "bonus": 3292871, "gender": "Male"}, {"x": 1.151, "y": 4.017839246911145, "department": "Engineering", "employee": "EMP0144", "salary": 80190272, "bonus": 6265282, "gender": "Female"}, {"x": 0.871, "y": 4.02858686674246, "department": "Operations", "employee": "EMP0145", "salary": 20577940, "bonus": 1528612, "gender": "Female"}, {"x": 0.913, "y": 5.0506702779145645, "department": "Sales", "employee": "EMP0146", "salary": 40887543, "bonus": 4869446, "gender": "Male"}, {"x": 0.859, "y": 2.998064239301569, "department": "HR", "employee": "EMP0147", "salary": 29941345, "bonus": 1463039, "gender": "Female"}, {"x": 1.051, "y": 3.03428645260418, "department": "Finance", "employee": "EMP0148", "salary": 54058037, "bonus": 2483254, "gender": "Male"}, {"x": 0.896, "y": 2.0045294094312425, "department": "Engineering", "employee": "EMP0149", "salary": 37054348, "bonus": 1107573, "gender": "Female"}, {"x": 0.942, "y": 2.9875207276063005, "department": "Product", "employee": "EMP0150", "salary": 59101574, "bonus": 3294561, "gender": "Male"}, {"x": 1.04, "y": 3.970536024037904, "department": "Product", "employee": "EMP0151", "salary": 44662097, "bonus": 3638359, "gender": "Female"}, {"x": 1.001, "y": 3.9301616910312758, "department": "Sales", "employee": "EMP0152", "salary": 20818019, "bonus": 1918472, "gender": "Female"}, {"x": 0.939, "y": 3.06286035138166, "department": "Product", "employee": "EMP0153", "salary": 40297868, "bonus": 1830095, "gender": "Female"}, {"x": 1.139, "y": 3.986741993295122, "department": "Product", "employee": "EMP0154", "salary": 84978244, "bonus": 6518988, "gender": "Female"}, {"x": 0.9, "y": 3.9957340754472503, "department": "Operations", "employee": "EMP0155", "salary": 47364447, "bonus": 3971400, "gender": "Female"}, {"x": 1.087, "y": 3.99916620805585, "department": "Operations", "employee": "EMP0156", "salary": 25673847, "bonus": 2026660, "gender": "Male"}, {"x": 0.991, "y": 3.070234316165662, "department": "Operations", "employee": "EMP0157", "salary": 39450705, "bonus": 1577505, "gender": "Male"}, {"x": 1.001, "y": 2.9754822581390443, "department": "HR", "employee": "EMP0158", "salary": 28066512, "bonus": 1232803, "gender": "Male"}, {"x": 0.99, "y": 5.031602310462272, "department": "Finance", "employee": "EMP0159", "salary": 30217041, "bonus": 3605867, "gender": "Female"}, {"x": 0.963, "y": 3.9233291079537076, "department": "Sales", "employee": "EMP0160", "salary": 22719633, "bonus": 1887402, "gender": "Female"}, {"x": 1.14, "y": 2.966081725032579, "department": "Sales", "employee": "EMP0161", "salary": 30303195, "bonus": 1583164, "gender": "Male"}, {"x": 1.304, "y": 4.950752207600165, "department": "Product", "employee": "EMP0162", "salary": 73536029, "bonus": 7629514, "gender": "Male"}, {"x": 1.118, "y": 3.975015582368506, "department": "Engineering", "employee": "EMP0163", "salary": 72754775, "bonus": 4805014, "gender": "Male"}, {"x": 0.898, "y": 4.957136498102708, "department": "Finance", "employee": "EMP0164", "salary": 27412161, "bonus": 3251101, "gender": "Male"}, {"x": 1.054, "y": 3.9551523752065405, "department": "Sales", "employee": "EMP0165", "salary": 35930457, "bonus": 2873406, "gender": "Male"}, {"x": 0.965, "y": 5.065451224666803, "department": "Sales", "employee": "EMP0166", "salary": 25657734, "bonus": 3659853, "gender": "Female"}, {"x": 0.957, "y": 3.974264479782266, "department": "HR", "employee": "EMP0167", "salary": 23550911, "bonus": 1576690, "gender": "Male"}, {"x": 1.036, "y": 4.016336021248643, "department": "HR", "employee": "EMP0168", "salary": 40127884, "bonus": 2754413, "gender": "Male"}, {"x": 1.046, "y": 3.054794741529464, "department": "Product", "employee": "EMP0169", "salary": 58988088, "bonus": 2967025, "gender": "Male"}, {"x": 0.988, "y": 4.025113301835617, "department": "Engineering", "employee": "EMP0170", "salary": 85093332, "bonus": 8013358, "gender": "Female"}, {"x": 0.846, "y": 2.9409853707351368, "department": "Sales", "employee": "EMP0171", "salary": 28827993, "bonus": 1705366, "gender": "Male"}, {"x": 1.083, "y": 3.9669430467164455, "department": "HR", "employee": "EMP0172", "salary": 20867616, "bonus": 1573015, "gender": "Female"}, {"x": 0.982, "y": 3.0338216297511713, "department": "HR", "employee": "EMP0173", "salary": 40721775, "bonus": 1968366, "gender": "Male"}, {"x": 0.853, "y": 4.07356853892429, "department": "Engineering", "employee": "EMP0174", "salary": 78546414, "bonus": 6433622, "gender": "Male"}, {"x": 0.847, "y": 3.0532929193272556, "department": "Product", "employee": "EMP0175", "salary": 20742668, "bonus": 1057353, "gender": "Male"}, {"x": 0.843, "y": 3.027697166982293, "department": "Operations", "employee": "EMP0176", "salary": 17673900, "bonus": 650829, "gender": "Female"}, {"x": 1.162, "y": 4.037533541155166, "department": "Sales", "employee": "EMP0177", "salary": 30877891, "bonus": 2804433, "gender": "Male"}, {"x": 1.018, "y": 3.04735562619248, "department": "Product", "employee": "EMP0178", "salary": 31847668, "bonus": 1191749, "gender": "Female"}, {"x": 1.083, "y": 4.047960809434583, "department": "Sales", "employee": "EMP0179", "salary": 36906865, "bonus": 2745186, "gender": "Male"}, {"x": 1.023, "y": 4.0551250054383585, "department": "Sales", "employee": "EMP0180", "salary": 34878234, "bonus": 2636336, "gender": "Female"}, {"x": 1.026, "y": 4.01949478054906, "department": "Sales", "employee": "EMP0181", "salary": 42953456, "bonus": 3929110, "gender": "Female"}, {"x": 1.131, "y": 1.9651931544431418, "department": "Operations", "employee": "EMP0182", "salary": 26727093, "bonus": 536817, "gender": "Male"}, {"x": 0.94, "y": 4.039880688293209, "department": "Engineering", "employee": "EMP0183", "salary": 80912883, "bonus": 7091930, "gender": "Female"}, {"x": 0.86, "y": 3.026729032376873, "department": "Sales", "employee": "EMP0184", "salary": 22870601, "bonus": 1147110, "gender": "Female"}, {"x": 0.907, "y": 2.9406554486433163, "department": "Engineering", "employee": "EMP0185", "salary": 48121095, "bonus": 2680693, "gender": "Male"}, {"x": 0.727, "y": 3.9519174756483006, "department": "Operations", "employee": "EMP0186", "salary": 14448578, "bonus": 1284517, "gender": "Female"}, {"x": 0.814, "y": 4.016919841160996, "department": "Operations", "employee": "EMP0187", "salary": 15045517, "bonus": 1303574, "gender": "Male"}, {"x": 1.133, "y": 1.936144596092084, "department": "Engineering", "employee": "EMP0188", "salary": 56156282, "bonus": 1626516, "gender": "Male"}, {"x": 1.101, "y": 4.986557497910327, "department": "Product", "employee": "EMP0189", "salary": 36864069, "bonus": 5295187, "gender": "Male"}, {"x": 0.886, "y": 3.079002757661015, "department": "Product", "employee": "EMP0190", "salary": 23197068, "bonus": 912330, "gender": "Female"}, {"x": 0.867, "y": 3.9685843029436096, "department": "Engineering", "employee": "EMP0191", "salary": 30167318, "bonus": 2134879, "gender": "Male"}, {"x": 1.04, "y": 3.9535092706165678, "department": "Sales", "employee": "EMP0192", "salary": 24537728, "bonus": 2282279, "gender": "Female"}, {"x": 1.048, "y": 4.927527893780781, "department": "Engineering", "employee": "EMP0193", "salary": 31701231, "bonus": 4445489, "gender": "Female"}, {"x": 1.059, "y": 2.922900895308002, "department": "Engineering", "employee": "EMP0194", "salary": 56172598, "bonus": 2943685, "gender": "Female"}, {"x": 0.977, "y": 4.060944977117548, "department": "Operations", "employee": "EMP0195", "salary": 29593842, "bonus": 2290535, "gender": "Male"}, {"x": 0.786, "y": 4.977127019973907, "department": "Product", "employee": "EMP0196", "salary": 44296109, "bonus": 6375095, "gender": "Male"}, {"x": 1.122, "y": 4.945376874416727, "department": "Engineering", "employee": "EMP0197", "salary": 103330939, "bonus": 13097983, "gender": "Male"}, {"x": 1.33, "y": 3.052471790146186, "department": "HR", "employee": "EMP0198", "salary": 55137247, "bonus": 2477033, "gender": "Male"}, {"x": 0.952, "y": 2.063113195304249, "department": "HR", "employee": "EMP0199", "salary": 46364908, "bonus": 1375178, "gender": "Male"}, {"x": 0.929, "y": 3.925115201242942, "department": "HR", "employee": "EMP0200", "salary": 29338132, "bonus": 2006124, "gender": "Male"}, {"x": 0.831, "y": 3.9301864937993702, "department": "Sales", "employee": "EMP0201", "salary": 22098406, "bonus": 1552741, "gender": "Male"}, {"x": 1.024, "y": 3.9888992740082374, "department": "HR", "employee": "EMP0202", "salary": 39684899, "bonus": 2964781, "gender": "Female"}, {"x": 0.997, "y": 3.018810067447055, "department": "Engineering", "employee": "EMP0203", "salary": 34677623, "bonus": 1780421, "gender": "Male"}, {"x": 1.136, "y": 3.939310085251309, "department": "Product", "employee": "EMP0204", "salary": 29745940, "bonus": 2210996, "gender": "Female"}, {"x": 1.104, "y": 2.9558553021983687, "department": "HR", "employee": "EMP0205", "salary": 25399626, "bonus": 1273625, "gender": "Female"}, {"x": 1.003, "y": 2.9612515425606523, "department": "Sales", "employee": "EMP0206", "salary": 24912951, "bonus": 1415763, "gender": "Male"}, {"x": 0.875, "y": 1.9744518742381165, "department": "Sales", "employee": "EMP0207", "salary": 29837957, "bonus": 640145, "gender": "Male"}, {"x": 1.094, "y": 3.976838556253164, "department": "Engineering", "employee": "EMP0208", "salary": 57991601, "bonus": 5176375, "gender": "Female"}, {"x": 0.822, "y": 2.9274682173372444, "department": "Sales", "employee": "EMP0209", "salary": 21857412, "bonus": 1081019, "gender": "Female"}, {"x": 1.026, "y": 2.0604341835463313, "department": "Engineering", "employee": "EMP0210", "salary": 29462072, "bonus": 535542, "gender": "Male"}, {"x": 0.836, "y": 4.962798597689054, "department": "Operations", "employee": "EMP0211", "salary": 41120857, "bonus": 5976438, "gender": "Female"}, {"x": 1.059, "y": 2.944188539807091, "department": "Operations", "employee": "EMP0212", "salary": 30000114, "bonus": 1446637, "gender": "Male"}, {"x": 0.844, "y": 4.0304216931744765, "department": "Engineering", "employee": "EMP0213", "salary": 27294138, "bonus": 2448306, "gender": "Female"}, {"x": 1.13, "y": 3.002461990838396, "department": "Engineering", "employee": "EMP0214", "salary": 41495428, "bonus": 2247033, "gender": "Male"}, {"x": 0.901, "y": 2.0271177424241804, "department": "Product", "employee": "EMP0215", "salary": 23604406, "bonus": 585645, "gender": "Female"}, {"x": 0.971, "y": 4.033024786770847, "department": "Engineering", "employee": "EMP0216", "salary": 26435197, "bonus": 2192470, "gender": "Female"}, {"x": 0.988, "y": 3.06826113575252, "department": "Engineering", "employee": "EMP0217", "salary": 40841528, "bonus": 2397929, "gender": "Male"}, {"x": 1.153, "y": 4.990052273033842, "department": "HR", "employee": "EMP0218", "salary": 36399792, "bonus": 5070135, "gender": "Female"}, {"x": 1.054, "y": 2.993141702369031, "department": "Sales", "employee": "EMP0219", "salary": 21931888, "bonus": 1155578, "gender": "Male"}, {"x": 1.003, "y": 3.054655515856462, "department": "HR", "employee": "EMP0220", "salary": 28118239, "bonus": 1438744, "gender": "Male"}, {"x": 0.931, "y": 2.9377489351924178, "department": "Finance", "employee": "EMP0221", "salary": 20780301, "bonus": 1181163, "gender": "Female"}, {"x": 0.863, "y": 4.936942697503152, "department": "Operations", "employee": "EMP0222", "salary": 24428012, "bonus": 2461530, "gender": "Female"}, {"x": 0.941, "y": 3.0176916070099544, "department": "HR", "employee": "EMP0223", "salary": 16091660, "bonus": 931356, "gender": "Female"}, {"x": 0.871, "y": 3.0451450012426227, "department": "Finance", "employee": "EMP0224", "salary": 24852651, "bonus": 931110, "gender": "Female"}, {"x": 0.901, "y": 3.0715813590310432, "department": "Sales", "employee": "EMP0225", "salary": 35827758, "bonus": 1384674, "gender": "Female"}, {"x": 1.094, "y": 4.051777636483279, "department": "HR", "employee": "EMP0226", "salary": 34540667, "bonus": 2762530, "gender": "Female"}, {"x": 0.901, "y": 2.9267151099530526, "department": "Operations", "employee": "EMP0227", "salary": 17898630, "bonus": 982176, "gender": "Male"}, {"x": 0.97, "y": 1.9368657734001236, "department": "Operations", "employee": "EMP0228", "salary": 20351655, "bonus": 548150, "gender": "Male"}, {"x": 1.171, "y": 2.020788178584646, "department": "Operations", "employee": "EMP0229", "salary": 46619540, "bonus": 937736, "gender": "Male"}, {"x": 1.001, "y": 4.059339115864499, "department": "Operations", "employee": "EMP0230", "salary": 28347358, "bonus": 1852657, "gender": "Female"}, {"x": 0.823, "y": 5.065757723285721, "department": "Engineering", "employee": "EMP0231", "salary": 75821144, "bonus": 7987820, "gender": "Male"}, {"x": 1.11, "y": 2.945125207577168, "department": "Engineering", "employee": "EMP0232", "salary": 33565396, "bonus": 1515501, "gender": "Male"}, {"x": 0.821, "y": 3.966739678034977, "department": "HR", "employee": "EMP0233", "salary": 18886397, "bonus": 1280592, "gender": "Male"}, {"x": 0.948, "y": 3.9906428656124646, "department": "Sales", "employee": "EMP0234", "salary": 19718429, "bonus": 1338109, "gender": "Female"}, {"x": 1.041, "y": 3.00094345867442, "department": "Product", "employee": "EMP0235", "salary": 22944165, "bonus": 1333965, "gender": "Male"}, {"x": 0.811, "y": 5.037208303058735, "department": "Sales", "employee": "EMP0236", "salary": 14977158, "bonus": 2031435, "gender": "Female"}, {"x": 1.15, "y": 2.9358870782307336, "department": "Product", "employee": "EMP0237", "salary": 30130562, "bonus": 1623743, "gender": "Male"}, {"x": 1.039, "y": 4.023534875349685, "department": "HR", "employee": "EMP0238", "salary": 30651541, "bonus": 2305541, "gender": "Male"}, {"x": 1.341, "y": 2.973537204050017, "department": "HR", "employee": "EMP0239", "salary": 27754853, "bonus": 1218307, "gender": "Female"}, {"x": 0.851, "y": 3.9420435942685406, "department": "Sales", "employee": "EMP0240", "salary": 27126980, "bonus": 2342423, "gender": "Female"}, {"x": 0.944, "y": 3.055775214674342, "department": "Operations", "employee": "EMP0241", "salary": 22312851, "bonus": 854865, "gender": "Female"}, {"x": 1.108, "y": 2.990257353746458, "department": "Sales", "employee": "EMP0242", "salary": 37782360, "bonus": 1628826, "gender": "Female"}, {"x": 0.829, "y": 3.9865199741950264, "department": "Engineering", "employee": "EMP0243", "salary": 34288317, "bonus": 2403182, "gender": "Male"}, {"x": 1.046, "y": 3.0430453062136027, "department": "Product", "employee": "EMP0244", "salary": 35005605, "bonus": 1292513, "gender": "Female"}, {"x": 1.021, "y": 4.959250570338742, "department": "Engineering", "employee": "EMP0245", "salary": 50601576, "bonus": 7094534, "gender": "Female"}, {"x": 0.885, "y": 3.0494632345124044, "department": "Engineering", "employee": "EMP0246", "salary": 51873732, "bonus": 2076054, "gender": "Male"}, {"x": 0.927, "y": 2.9746112111649015, "department": "HR", "employee": "EMP0247", "salary": 50843851, "bonus": 2257537, "gender": "Male"}, {"x": 0.942, "y": 4.000803636516645, "department": "Sales", "employee": "EMP0248", "salary": 18315613, "bonus": 1714161, "gender": "Male"}, {"x": 1.032, "y": 3.933637417871971, "department": "Operations", "employee": "EMP0249", "salary": 24379945, "bonus": 1949886, "gender": "Male"}, {"x": 1.125, "y": 1.979589817184448, "department": "Engineering", "employee": "EMP0250", "salary": 55776884, "bonus": 1004882, "gender": "Male"}, {"x": 1.108, "y": 3.040775234001885, "department": "HR", "employee": "EMP0251", "salary": 32689306, "bonus": 1665668, "gender": "Male"}, {"x": 1.165, "y": 1.9777029450290684, "department": "Operations", "employee": "EMP0252", "salary": 35290291, "bonus": 634955, "gender": "Male"}, {"x": 0.856, "y": 4.026399240786375, "department": "HR", "employee": "EMP0253", "salary": 21066546, "bonus": 1732872, "gender": "Female"}, {"x": 1.026, "y": 2.9442577943244057, "department": "Sales", "employee": "EMP0254", "salary": 42935691, "bonus": 1949254, "gender": "Female"}, {"x": 1.021, "y": 3.040561147367537, "department": "Product", "employee": "EMP0255", "salary": 76126041, "bonus": 3570621, "gender": "Female"}, {"x": 1.142, "y": 3.987475553497333, "department": "Operations", "employee": "EMP0256", "salary": 26970500, "bonus": 2300966, "gender": "Male"}, {"x": 0.898, "y": 2.956509120628827, "department": "HR", "employee": "EMP0257", "salary": 22102364, "bonus": 997395, "gender": "Female"}, {"x": 1.139, "y": 3.0482829885826384, "department": "Operations", "employee": "EMP0258", "salary": 26917521, "bonus": 1416357, "gender": "Male"}, {"x": 0.949, "y": 2.9861455069995166, "department": "Operations", "employee": "EMP0259", "salary": 37774606, "bonus": 1754206, "gender": "Female"}, {"x": 0.906, "y": 2.9854894911027734, "department": "Finance", "employee": "EMP0260", "salary": 33135198, "bonus": 1860142, "gender": "Male"}, {"x": 1.03, "y": 2.9934004902265556, "department": "Finance", "employee": "EMP0261", "salary": 40312894, "bonus": 1718720, "gender": "Male"}, {"x": 1.047, "y": 4.05638247670669, "department": "Operations", "employee": "EMP0262", "salary": 31728498, "bonus": 2722400, "gender": "Female"}, {"x": 1.111, "y": 2.0471371754195675, "department": "HR", "employee": "EMP0263", "salary": 35058705, "bonus": 602336, "gender": "Female"}, {"x": 1.005, "y": 2.9778838991448167, "department": "Product", "employee": "EMP0264", "salary": 50329408, "bonus": 2818311, "gender": "Female"}, {"x": 1.135, "y": 2.9247620683223947, "department": "Product", "employee": "EMP0265", "salary": 25005506, "bonus": 1161082, "gender": "Female"}, {"x": 0.798, "y": 2.9432934889437576, "department": "Operations", "employee": "EMP0266", "salary": 24173527, "bonus": 1343209, "gender": "Female"}, {"x": 0.839, "y": 2.921591794154198, "department": "Operations", "employee": "EMP0267", "salary": 22578404, "bonus": 1354316, "gender": "Female"}, {"x": 0.92, "y": 4.0489994985072, "department": "Engineering", "employee": "EMP0268", "salary": 64094878, "bonus": 5296654, "gender": "Male"}, {"x": 1.072, "y": 2.07098285444925, "department": "Operations", "employee": "EMP0269", "salary": 32488456, "bonus": 552834, "gender": "Female"}, {"x": 1.182, "y": 4.933564514325027, "department": "Sales", "employee": "EMP0270", "salary": 29364581, "bonus": 4350028, "gender": "Female"}, {"x": 1.0, "y": 4.970368731500686, "department": "HR", "employee": "EMP0271", "salary": 46141221, "bonus": 6525480, "gender": "Female"}, {"x": 0.851, "y": 3.077111187901941, "department": "Operations", "employee": "EMP0272", "salary": 18793519, "bonus": 1071289, "gender": "Female"}, {"x": 0.972, "y": 4.946291949074355, "department": "Sales", "employee": "EMP0273", "salary": 22946868, "bonus": 3182886, "gender": "Female"}, {"x": 1.053, "y": 2.929834932557662, "department": "Operations", "employee": "EMP0274", "salary": 23243756, "bonus": 1063194, "gender": "Female"}, {"x": 0.949, "y": 3.0414707816089317, "department": "Engineering", "employee": "EMP0275", "salary": 66091499, "bonus": 3440974, "gender": "Male"}, {"x": 0.907, "y": 2.025628187564038, "department": "Product", "employee": "EMP0276", "salary": 51169729, "bonus": 1492142, "gender": "Female"}, {"x": 0.964, "y": 4.02263452071065, "department": "Operations", "employee": "EMP0277", "salary": 16655973, "bonus": 1207753, "gender": "Female"}, {"x": 0.924, "y": 4.064401781051823, "department": "HR", "employee": "EMP0278", "salary": 17789947, "bonus": 1531909, "gender": "Female"}, {"x": 1.01, "y": 3.929249572727362, "department": "Sales", "employee": "EMP0279", "salary": 21006606, "bonus": 1988163, "gender": "Male"}, {"x": 1.057, "y": 5.021057209944781, "department": "Product", "employee": "EMP0280", "salary": 27692762, "bonus": 2959151, "gender": "Male"}, {"x": 0.997, "y": 4.034139122723426, "department": "Operations", "employee": "EMP0281", "salary": 16371116, "bonus": 1280270, "gender": "Female"}, {"x": 0.964, "y": 3.0256578610847153, "department": "Operations", "employee": "EMP0282", "salary": 17822102, "bonus": 959028, "gender": "Male"}, {"x": 1.002, "y": 4.0031645381124745, "department": "Sales", "employee": "EMP0283", "salary": 59342888, "bonus": 5244077, "gender": "Female"}, {"x": 0.999, "y": 3.9673159079781835, "department": "Finance", "employee": "EMP0284", "salary": 39091773, "bonus": 2604961, "gender": "Female"}, {"x": 0.701, "y": 3.984320450885037, "department": "HR", "employee": "EMP0285", "salary": 17261670, "bonus": 1633066, "gender": "Female"}, {"x": 1.022, "y": 4.0289393051872135, "department": "Product", "employee": "EMP0286", "salary": 53850892, "bonus": 4744857, "gender": "Female"}, {"x": 0.845, "y": 4.008577668516095, "department": "Product", "employee": "EMP0287", "salary": 28292482, "bonus": 2264289, "gender": "Female"}, {"x": 0.952, "y": 2.968691683675708, "department": "Operations", "employee": "EMP0288", "salary": 16443886, "bonus": 659070, "gender": "Male"}, {"x": 1.156, "y": 4.038831600324745, "department": "Sales", "employee": "EMP0289", "salary": 28712300, "bonus": 2495063, "gender": "Male"}, {"x": 0.934, "y": 4.065476936512181, "department": "Product", "employee": "EMP0290", "salary": 24468083, "bonus": 2134100, "gender": "Female"}, {"x": 1.036, "y": 3.921264357360606, "department": "Operations", "employee": "EMP0291", "salary": 31398045, "bonus": 2198142, "gender": "Male"}, {"x": 1.031, "y": 1.964764919162045, "department": "Finance", "employee": "EMP0292", "salary": 27927910, "bonus": 314955, "gender": "Male"}, {"x": 0.876, "y": 3.004446677697183, "department": "Sales", "employee": "EMP0293", "salary": 18220481, "bonus": 753925, "gender": "Female"}, {"x": 1.018, "y": 3.067272094663217, "department": "Sales", "employee": "EMP0294", "salary": 34704911, "bonus": 1344889, "gender": "Female"}, {"x": 0.95, "y": 3.032047210221217, "department": "Finance", "employee": "EMP0295", "salary": 33021710, "bonus": 1750388, "gender": "Male"}, {"x": 1.104, "y": 2.9913902481125345, "department": "Product", "employee": "EMP0296", "salary": 34532524, "bonus": 2032308, "gender": "Male"}, {"x": 1.047, "y": 3.952821371421313, "department": "Sales", "employee": "EMP0297", "salary": 23411922, "bonus": 1917769, "gender": "Female"}, {"x": 0.928, "y": 5.007108046560716, "department": "Operations", "employee": "EMP0298", "salary": 20494465, "bonus": 2828730, "gender": "Female"}, {"x": 0.809, "y": 5.046134652636274, "department": "Product", "employee": "EMP0299", "salary": 27092497, "bonus": 2711230, "gender": "Female"}, {"x": 1.128, "y": 2.0243259339834974, "department": "Finance", "employee": "EMP0300", "salary": 44137886, "bonus": 1321452, "gender": "Female"}, {"x": 0.899, "y": 5.031595354491771, "department": "Product", "employee": "EMP0301", "salary": 44999938, "bonus": 4691024, "gender": "Female"}, {"x": 1.113, "y": 3.0620279834411517, "department": "Product", "employee": "EMP0302", "salary": 62748239, "bonus": 2605606, "gender": "Male"}, {"x": 1.043, "y": 3.0450500949010335, "department": "Finance", "employee": "EMP0303", "salary": 38150373, "bonus": 2079135, "gender": "Female"}, {"x": 0.909, "y": 2.9847209129040246, "department": "Engineering", "employee": "EMP0304", "salary": 29412149, "bonus": 1117598, "gender": "Female"}, {"x": 0.977, "y": 3.95156732068178, "department": "Operations", "employee": "EMP0305", "salary": 36359629, "bonus": 2634130, "gender": "Female"}, {"x": 0.9, "y": 1.9682450259736548, "department": "Sales", "employee": "EMP0306", "salary": 30696320, "bonus": 766228, "gender": "Male"}, {"x": 1.031, "y": 3.925915227577011, "department": "Sales", "employee": "EMP0307", "salary": 46145729, "bonus": 4139743, "gender": "Female"}, {"x": 0.979, "y": 1.9735188679575844, "department": "Operations", "employee": "EMP0308", "salary": 27716114, "bonus": 777435, "gender": "Female"}, {"x": 1.032, "y": 3.036015789173699, "department": "Product", "employee": "EMP0309", "salary": 48967497, "bonus": 2416404, "gender": "Female"}, {"x": 1.046, "y": 3.038408355569691, "department": "Sales", "employee": "EMP0310", "salary": 20324898, "bonus": 1025989, "gender": "Female"}, {"x": 1.03, "y": 2.9401609033590193, "department": "Engineering", "employee": "EMP0311", "salary": 39780318, "bonus": 2272105, "gender": "Female"}, {"x": 0.898, "y": 4.078707835126865, "department": "Operations", "employee": "EMP0312", "salary": 30075657, "bonus": 2392229, "gender": "Male"}, {"x": 1.252, "y": 3.965428457514923, "department": "Sales", "employee": "EMP0313", "salary": 33274520, "bonus": 2691342, "gender": "Female"}, {"x": 1.099, "y": 2.9348511308570764, "department": "HR", "employee": "EMP0314", "salary": 60285422, "bonus": 2194252, "gender": "Male"}, {"x": 1.005, "y": 4.0082857362177995, "department": "Engineering", "employee": "EMP0315", "salary": 58858716, "bonus": 4872065, "gender": "Female"}, {"x": 0.954, "y": 4.0034137384184705, "department": "Operations", "employee": "EMP0316", "salary": 37979547, "bonus": 2683141, "gender": "Male"}, {"x": 1.043, "y": 3.0411274118848866, "department": "Finance", "employee": "EMP0317", "salary": 31828632, "bonus": 1532906, "gender": "Female"}, {"x": 0.896, "y": 2.945604374436643, "department": "HR", "employee": "EMP0318", "salary": 17264231, "bonus": 613706, "gender": "Male"}, {"x": 0.974, "y": 4.924462596047305, "department": "HR", "employee": "EMP0319", "salary": 33964865, "bonus": 4068304, "gender": "Male"}, {"x": 0.73, "y": 4.04745579187862, "department": "Engineering", "employee": "EMP0320", "salary": 23613742, "bonus": 1658301, "gender": "Male"}, {"x": 0.964, "y": 3.014800576279986, "department": "Operations", "employee": "EMP0321", "salary": 32267388, "bonus": 1684760, "gender": "Female"}, {"x": 0.99, "y": 1.9586143646624434, "department": "Operations", "employee": "EMP0322", "salary": 46261524, "bonus": 1019964, "gender": "Female"}, {"x": 1.141, "y": 3.0438652459430005, "department": "HR", "employee": "EMP0323", "salary": 26235039, "bonus": 1562546, "gender": "Male"}, {"x": 0.922, "y": 3.036241479423935, "department": "Finance", "employee": "EMP0324", "salary": 20574590, "bonus": 848466, "gender": "Male"}, {"x": 0.683, "y": 5.077912752038568, "department": "Engineering", "employee": "EMP0325", "salary": 22114610, "bonus": 2815216, "gender": "Female"}, {"x": 1.19, "y": 2.9376707049989537, "department": "Sales", "employee": "EMP0326", "salary": 49813345, "bonus": 2110727, "gender": "Male"}, {"x": 0.775, "y": 3.9295913181800644, "department": "HR", "employee": "EMP0327", "salary": 14928335, "bonus": 1012039, "gender": "Female"}, {"x": 1.049, "y": 2.9796766188857036, "department": "Operations", "employee": "EMP0328", "salary": 24794826, "bonus": 930586, "gender": "Male"}, {"x": 0.984, "y": 3.020318325170874, "department": "Engineering", "employee": "EMP0329", "salary": 48769937, "bonus": 1767466, "gender": "Male"}, {"x": 0.922, "y": 2.976715735344664, "department": "Finance", "employee": "EMP0330", "salary": 22014540, "bonus": 880403, "gender": "Female"}, {"x": 0.898, "y": 2.9276372596699716, "department": "Engineering", "employee": "EMP0331", "salary": 37130478, "bonus": 1913185, "gender": "Male"}, {"x": 0.982, "y": 3.024153987099341, "department": "Sales", "employee": "EMP0332", "salary": 18127041, "bonus": 736974, "gender": "Female"}, {"x": 1.114, "y": 4.939959968863412, "department": "Product", "employee": "EMP0333", "salary": 44701406, "bonus": 5788221, "gender": "Female"}, {"x": 0.907, "y": 4.967673778024238, "department": "Finance", "employee": "EMP0334", "salary": 46649744, "bonus": 5775850, "gender": "Female"}, {"x": 0.843, "y": 4.037897391325489, "department": "HR", "employee": "EMP0335", "salary": 24861132, "bonus": 1705684, "gender": "Male"}, {"x": 1.082, "y": 4.9925035456883675, "department": "Engineering", "employee": "EMP0336", "salary": 88520665, "bonus": 10779131, "gender": "Male"}, {"x": 0.979, "y": 3.0772720900012223, "department": "Operations", "employee": "EMP0337", "salary": 38966586, "bonus": 1750920, "gender": "Male"}, {"x": 0.907, "y": 3.0488620099374746, "department": "Engineering", "employee": "EMP0338", "salary": 31527191, "bonus": 1430107, "gender": "Male"}, {"x": 0.981, "y": 3.0782400126237794, "department": "Sales", "employee": "EMP0339", "salary": 29677448, "bonus": 1436117, "gender": "Male"}, {"x": 1.021, "y": 3.010495556252774, "department": "Sales", "employee": "EMP0340", "salary": 27126157, "bonus": 1362177, "gender": "Male"}, {"x": 0.752, "y": 5.063094223663258, "department": "Product", "employee": "EMP0341", "salary": 42424007, "bonus": 4285319, "gender": "Female"}, {"x": 1.128, "y": 3.0204390962904935, "department": "Engineering", "employee": "EMP0342", "salary": 46650130, "bonus": 2768941, "gender": "Male"}, {"x": 1.07, "y": 4.005326185041065, "department": "Finance", "employee": "EMP0343", "salary": 32656155, "bonus": 2848542, "gender": "Male"}, {"x": 1.121, "y": 3.015287826340005, "department": "Finance", "employee": "EMP0344", "salary": 53876550, "bonus": 3032301, "gender": "Female"}, {"x": 1.121, "y": 4.976053941606524, "department": "Product", "employee": "EMP0345", "salary": 24708042, "bonus": 3341310, "gender": "Male"}, {"x": 1.02, "y": 3.9655256791912583, "department": "Finance", "employee": "EMP0346", "salary": 29098012, "bonus": 2046391, "gender": "Female"}, {"x": 0.832, "y": 3.045566282051896, "department": "Sales", "employee": "EMP0347", "salary": 22111358, "bonus": 987585, "gender": "Male"}, {"x": 0.922, "y": 3.0343767149123737, "department": "Sales", "employee": "EMP0348", "salary": 45916420, "bonus": 1630093, "gender": "Male"}, {"x": 0.991, "y": 3.027589408326115, "department": "Operations", "employee": "EMP0349", "salary": 16276249, "bonus": 897263, "gender": "Male"}, {"x": 1.068, "y": 3.0342961566181965, "department": "HR", "employee": "EMP0350", "salary": 33718128, "bonus": 1750979, "gender": "Female"}, {"x": 0.911, "y": 4.003146663591281, "department": "Sales", "employee": "EMP0351", "salary": 17715043, "bonus": 1475158, "gender": "Male"}, {"x": 0.935, "y": 3.959621333009275, "department": "Product", "employee": "EMP0352", "salary": 21734408, "bonus": 1994593, "gender": "Male"}, {"x": 0.859, "y": 3.972455514092984, "department": "Engineering", "employee": "EMP0353", "salary": 53129223, "bonus": 4538440, "gender": "Male"}, {"x": 1.019, "y": 4.01317904733724, "department": "Operations", "employee": "EMP0354", "salary": 53646789, "bonus": 4407688, "gender": "Female"}, {"x": 0.909, "y": 4.051654835675418, "department": "Operations", "employee": "EMP0355", "salary": 20070799, "bonus": 1813649, "gender": "Male"}, {"x": 1.2, "y": 3.97780280525006, "department": "Finance", "employee": "EMP0356", "salary": 28650612, "bonus": 2019640, "gender": "Female"}, {"x": 1.181, "y": 2.9356780530769266, "department": "Engineering", "employee": "EMP0357", "salary": 38227722, "bonus": 1586985, "gender": "Male"}, {"x": 0.986, "y": 5.033862467319598, "department": "Finance", "employee": "EMP0358", "salary": 25295878, "bonus": 3162589, "gender": "Male"}, {"x": 1.056, "y": 3.0525500207091008, "department": "Sales", "employee": "EMP0359", "salary": 28064144, "bonus": 1381741, "gender": "Male"}, {"x": 1.012, "y": 2.9331115461495503, "department": "Sales", "employee": "EMP0360", "salary": 25140780, "bonus": 1278722, "gender": "Male"}, {"x": 1.012, "y": 2.9299509876071057, "department": "Engineering", "employee": "EMP0361", "salary": 70508586, "bonus": 3550953, "gender": "Male"}, {"x": 1.06, "y": 2.062161487495975, "department": "Sales", "employee": "EMP0362", "salary": 62763462, "bonus": 866860, "gender": "Female"}, {"x": 0.891, "y": 2.9962004914459994, "department": "Operations", "employee": "EMP0363", "salary": 19671161, "bonus": 770628, "gender": "Female"}, {"x": 1.276, "y": 2.9913862539268408, "department": "Engineering", "employee": "EMP0364", "salary": 49286105, "bonus": 2147313, "gender": "Male"}, {"x": 1.024, "y": 2.979087074609783, "department": "Engineering", "employee": "EMP0365", "salary": 29416550, "bonus": 1126070, "gender": "Male"}, {"x": 1.06, "y": 2.0042008965048237, "department": "Sales", "employee": "EMP0366", "salary": 22056465, "bonus": 456451, "gender": "Male"}, {"x": 0.907, "y": 4.014118313263617, "department": "HR", "employee": "EMP0367", "salary": 26749904, "bonus": 2177936, "gender": "Female"}, {"x": 0.921, "y": 4.0030311999068555, "department": "Engineering", "employee": "EMP0368", "salary": 45637484, "bonus": 3795625, "gender": "Female"}, {"x": 1.034, "y": 2.983165196027773, "department": "Finance", "employee": "EMP0369", "salary": 23084203, "bonus": 923223, "gender": "Female"}, {"x": 1.018, "y": 2.9621909935287283, "department": "Sales", "employee": "EMP0370", "salary": 19798516, "bonus": 694303, "gender": "Female"}, {"x": 0.824, "y": 2.9998123689132465, "department": "HR", "employee": "EMP0371", "salary": 31933112, "bonus": 1198522, "gender": "Female"}, {"x": 0.993, "y": 2.987747551198616, "department": "Engineering", "employee": "EMP0372", "salary": 91455056, "bonus": 3865273, "gender": "Female"}, {"x": 1.061, "y": 3.9904127927887654, "department": "Engineering", "employee": "EMP0373", "salary": 56271516, "bonus": 3945498, "gender": "Male"}, {"x": 0.923, "y": 3.06896569722631, "department": "Sales", "employee": "EMP0374", "salary": 26474912, "bonus": 1181917, "gender": "Female"}, {"x": 1.245, "y": 3.998326570667883, "department": "Finance", "employee": "EMP0375", "salary": 40995279, "bonus": 2860727, "gender": "Female"}, {"x": 0.961, "y": 3.0757235973083046, "department": "Sales", "employee": "EMP0376", "salary": 40235113, "bonus": 2096716, "gender": "Female"}, {"x": 1.018, "y": 3.0518098928485426, "department": "HR", "employee": "EMP0377", "salary": 17405277, "bonus": 745920, "gender": "Female"}, {"x": 0.977, "y": 2.9430953890154194, "department": "Operations", "employee": "EMP0378", "salary": 36356626, "bonus": 1747939, "gender": "Male"}, {"x": 0.903, "y": 3.9403398364600712, "department": "Product", "employee": "EMP0379", "salary": 38763501, "bonus": 3168929, "gender": "Female"}, {"x": 0.822, "y": 2.033784090826169, "department": "Product", "employee": "EMP0380", "salary": 35286261, "bonus": 699831, "gender": "Male"}, {"x": 1.046, "y": 2.9407016300774, "department": "HR", "employee": "EMP0381", "salary": 20145468, "bonus": 1108636, "gender": "Male"}, {"x": 0.958, "y": 3.0327239495673006, "department": "Finance", "employee": "EMP0382", "salary": 29233313, "bonus": 1430336, "gender": "Female"}, {"x": 0.996, "y": 4.058123465215136, "department": "Product", "employee": "EMP0383", "salary": 39962673, "bonus": 3736936, "gender": "Female"}, {"x": 0.915, "y": 3.938889305227364, "department": "Product", "employee": "EMP0384", "salary": 30621067, "bonus": 2648030, "gender": "Male"}, {"x": 0.98, "y": 3.954022806233683, "department": "Operations", "employee": "EMP0385", "salary": 23146993, "bonus": 1992097, "gender": "Male"}, {"x": 1.094, "y": 2.995736889878043, "department": "Engineering", "employee": "EMP0386", "salary": 33085354, "bonus": 1927401, "gender": "Male"}, {"x": 1.076, "y": 4.039439408966111, "department": "Sales", "employee": "EMP0387", "salary": 45021652, "bonus": 3534881, "gender": "Female"}, {"x": 1.193, "y": 2.0710511297691188, "department": "HR", "employee": "EMP0388", "salary": 22978005, "bonus": 451716, "gender": "Female"}, {"x": 0.887, "y": 2.9790931295415133, "department": "HR", "employee": "EMP0389", "salary": 15961336, "bonus": 910872, "gender": "Male"}, {"x": 1.284, "y": 3.072291480444391, "department": "Sales", "employee": "EMP0390", "salary": 67536155, "bonus": 3128352, "gender": "Male"}, {"x": 1.063, "y": 4.016256034198186, "department": "Sales", "employee": "EMP0391", "salary": 33874854, "bonus": 3152576, "gender": "Female"}, {"x": 0.72, "y": 3.9853791774634555, "department": "Engineering", "employee": "EMP0392", "salary": 38186721, "bonus": 3277542, "gender": "Female"}, {"x": 0.841, "y": 3.9393386284942458, "department": "Product", "employee": "EMP0393", "salary": 28161325, "bonus": 2541325, "gender": "Male"}, {"x": 0.965, "y": 3.0114823607082255, "department": "Finance", "employee": "EMP0394", "salary": 46354353, "bonus": 2491761, "gender": "Female"}, {"x": 1.001, "y": 2.926445142653915, "department": "Engineering", "employee": "EMP0395", "salary": 34798136, "bonus": 1926100, "gender": "Male"}, {"x": 1.015, "y": 3.944528721711328, "department": "Finance", "employee": "EMP0396", "salary": 33415870, "bonus": 2972831, "gender": "Male"}, {"x": 0.947, "y": 4.979434776669651, "department": "Operations", "employee": "EMP0397", "salary": 37675323, "bonus": 3791956, "gender": "Male"}, {"x": 0.955, "y": 5.078563216178965, "department": "Operations", "employee": "EMP0398", "salary": 31984070, "bonus": 4405978, "gender": "Male"}, {"x": 0.971, "y": 2.968521613233067, "department": "Operations", "employee": "EMP0399", "salary": 34312982, "bonus": 1350040, "gender": "Female"}, {"x": 0.985, "y": 3.9977480864858363, "department": "Engineering", "employee": "EMP0400", "salary": 38074397, "bonus": 3285466, "gender": "Female"}, {"x": 0.892, "y": 3.046592592171275, "department": "Engineering", "employee": "EMP0401", "salary": 36896406, "bonus": 1819617, "gender": "Male"}, {"x": 1.054, "y": 2.9427423689172176, "department": "Finance", "employee": "EMP0402", "salary": 32170331, "bonus": 1557877, "gender": "Female"}, {"x": 1.184, "y": 4.014339879061886, "department": "Engineering", "employee": "EMP0403", "salary": 38301839, "bonus": 3616996, "gender": "Female"}, {"x": 1.161, "y": 3.927784167452837, "department": "Operations", "employee": "EMP0404", "salary": 24355466, "bonus": 1817602, "gender": "Male"}, {"x": 1.047, "y": 5.063080468541579, "department": "HR", "employee": "EMP0405", "salary": 24073652, "bonus": 3373702, "gender": "Female"}, {"x": 1.137, "y": 5.062249152998307, "department": "Product", "employee": "EMP0406", "salary": 64086949, "bonus": 8132553, "gender": "Female"}, {"x": 1.109, "y": 2.954493032912108, "department": "Product", "employee": "EMP0407", "salary": 40027149, "bonus": 2104170, "gender": "Male"}, {"x": 0.904, "y": 3.0510600110765225, "department": "Finance", "employee": "EMP0408", "salary": 31430999, "bonus": 1168857, "gender": "Male"}, {"x": 0.882, "y": 2.998206984999282, "department": "Finance", "employee": "EMP0409", "salary": 32251768, "bonus": 1477957, "gender": "Female"}, {"x": 0.853, "y": 3.9395724648803916, "department": "Operations", "employee": "EMP0410", "salary": 24163506, "bonus": 1623248, "gender": "Male"}, {"x": 0.898, "y": 3.975783830961662, "department": "Product", "employee": "EMP0411", "salary": 50640206, "bonus": 4295388, "gender": "Female"}, {"x": 1.059, "y": 4.059268245750287, "department": "Sales", "employee": "EMP0412", "salary": 22037276, "bonus": 1880191, "gender": "Male"}, {"x": 0.947, "y": 3.9868120246901233, "department": "Finance", "employee": "EMP0413", "salary": 37063338, "bonus": 2414710, "gender": "Male"}, {"x": 0.937, "y": 5.0116894546862865, "department": "Sales", "employee": "EMP0414", "salary": 55487039, "bonus": 7340745, "gender": "Male"}, {"x": 1.01, "y": 3.010522236171215, "department": "Engineering", "employee": "EMP0415", "salary": 35110744, "bonus": 1976197, "gender": "Female"}, {"x": 1.021, "y": 4.064045966074256, "department": "HR", "employee": "EMP0416", "salary": 23472473, "bonus": 1868778, "gender": "Female"}, {"x": 0.944, "y": 3.045015895816452, "department": "Product", "employee": "EMP0417", "salary": 40503516, "bonus": 2041724, "gender": "Male"}, {"x": 0.984, "y": 2.9960364077502013, "department": "Sales", "employee": "EMP0418", "salary": 33544646, "bonus": 1539803, "gender": "Female"}, {"x": 0.952, "y": 3.0352053592606585, "department": "Product", "employee": "EMP0419", "salary": 34389760, "bonus": 1354759, "gender": "Female"}, {"x": 1.033, "y": 3.016913553634655, "department": "Finance", "employee": "EMP0420", "salary": 53118012, "bonus": 1959258, "gender": "Female"}, {"x": 1.076, "y": 4.04191219703975, "department": "Sales", "employee": "EMP0421", "salary": 20921272, "bonus": 1700985, "gender": "Female"}, {"x": 0.788, "y": 3.0007622178035502, "department": "Sales", "employee": "EMP0422", "salary": 35283727, "bonus": 1584932, "gender": "Female"}, {"x": 0.881, "y": 2.9937497863312705, "department": "Operations", "employee": "EMP0423", "salary": 29491889, "bonus": 1164299, "gender": "Male"}, {"x": 1.025, "y": 2.9919887026157626, "department": "Operations", "employee": "EMP0424", "salary": 50418387, "bonus": 1843878, "gender": "Female"}, {"x": 0.967, "y": 2.9918519582140237, "department": "Product", "employee": "EMP0425", "salary": 22498924, "bonus": 1339018, "gender": "Female"}, {"x": 0.935, "y": 3.058615288410025, "department": "Operations", "employee": "EMP0426", "salary": 23822091, "bonus": 1223071, "gender": "Male"}, {"x": 0.898, "y": 4.9720346058479725, "department": "Operations", "employee": "EMP0427", "salary": 33402316, "bonus": 4789423, "gender": "Female"}, {"x": 1.123, "y": 3.047969859391177, "department": "Sales", "employee": "EMP0428", "salary": 35770813, "bonus": 1441132, "gender": "Female"}, {"x": 0.808, "y": 3.0263203699869985, "department": "Engineering", "employee": "EMP0429", "salary": 42833709, "bonus": 1671849, "gender": "Female"}, {"x": 1.139, "y": 3.9855405323353232, "department": "Product", "employee": "EMP0430", "salary": 27883593, "bonus": 1859204, "gender": "Female"}, {"x": 0.969, "y": 1.9572515653374725, "department": "Engineering", "employee": "EMP0431", "salary": 83448028, "bonus": 1307555, "gender": "Male"}, {"x": 0.808, "y": 3.9832635406720613, "department": "Sales", "employee": "EMP0432", "salary": 40245732, "bonus": 3606565, "gender": "Female"}, {"x": 1.042, "y": 3.006559112126612, "department": "Operations", "employee": "EMP0433", "salary": 23015519, "bonus": 1027333, "gender": "Female"}, {"x": 1.011, "y": 3.073292718732886, "department": "Engineering", "employee": "EMP0434", "salary": 65794049, "bonus": 3592138, "gender": "Female"}, {"x": 1.152, "y": 4.062406906417723, "department": "Product", "employee": "EMP0435", "salary": 38541089, "bonus": 3255834, "gender": "Male"}, {"x": 0.986, "y": 4.037746047112197, "department": "Engineering", "employee": "EMP0436", "salary": 29823478, "bonus": 2465550, "gender": "Female"}, {"x": 1.011, "y": 4.023346644745505, "department": "Operations", "employee": "EMP0437", "salary": 30649493, "bonus": 2252676, "gender": "Female"}, {"x": 0.974, "y": 2.058552571732539, "department": "Sales", "employee": "EMP0438", "salary": 18936058, "bonus": 437251, "gender": "Male"}, {"x": 1.216, "y": 3.0331533801851323, "department": "Engineering", "employee": "EMP0439", "salary": 50279729, "bonus": 2219403, "gender": "Male"}, {"x": 1.012, "y": 4.011519166982304, "department": "Operations", "employee": "EMP0440", "salary": 30654787, "bonus": 2225946, "gender": "Male"}, {"x": 0.846, "y": 3.0473854050297677, "department": "Engineering", "employee": "EMP0441", "salary": 41941633, "bonus": 2201214, "gender": "Male"}, {"x": 0.837, "y": 3.0331838158474542, "department": "Engineering", "employee": "EMP0442", "salary": 34611281, "bonus": 2046020, "gender": "Male"}, {"x": 1.031, "y": 3.009767096811723, "department": "Product", "employee": "EMP0443", "salary": 23965833, "bonus": 861425, "gender": "Female"}, {"x": 0.847, "y": 3.939805057816403, "department": "HR", "employee": "EMP0444", "salary": 24996977, "bonus": 2104964, "gender": "Male"}, {"x": 1.006, "y": 4.009496451717796, "department": "Engineering", "employee": "EMP0445", "salary": 44893725, "bonus": 2966660, "gender": "Female"}, {"x": 0.884, "y": 2.9507882773341754, "department": "Product", "employee": "EMP0446", "salary": 20569342, "bonus": 986168, "gender": "Male"}, {"x": 0.837, "y": 5.018992648770611, "department": "Product", "employee": "EMP0447", "salary": 21911677, "bonus": 2494105, "gender": "Male"}, {"x": 1.011, "y": 3.012296893307704, "department": "Engineering", "employee": "EMP0448", "salary": 65838402, "bonus": 2788671, "gender": "Female"}, {"x": 0.923, "y": 4.928459901758782, "department": "Finance", "employee": "EMP0449", "salary": 52803977, "bonus": 6767275, "gender": "Male"}, {"x": 0.987, "y": 3.0112391013166353, "department": "Operations", "employee": "EMP0450", "salary": 51936353, "bonus": 1905485, "gender": "Female"}, {"x": 0.963, "y": 1.9503033396608336, "department": "HR", "employee": "EMP0451", "salary": 30408416, "bonus": 810188, "gender": "Female"}, {"x": 0.948, "y": 2.9961337107451422, "department": "Product", "employee": "EMP0452", "salary": 34219719, "bonus": 1962771, "gender": "Female"}, {"x": 1.17, "y": 5.063498284838992, "department": "HR", "employee": "EMP0453", "salary": 32802832, "bonus": 3619429, "gender": "Female"}, {"x": 0.88, "y": 3.9392453082302263, "department": "Engineering", "employee": "EMP0454", "salary": 46659969, "bonus": 3790853, "gender": "Female"}, {"x": 1.087, "y": 5.069789089598488, "department": "Sales", "employee": "EMP0455", "salary": 37047960, "bonus": 5528287, "gender": "Male"}, {"x": 0.845, "y": 3.9487589442281448, "department": "Engineering", "employee": "EMP0456", "salary": 32636683, "bonus": 2613358, "gender": "Female"}, {"x": 1.042, "y": 1.923035773366645, "department": "Operations", "employee": "EMP0457", "salary": 17101366, "bonus": 243097, "gender": "Male"}, {"x": 1.124, "y": 4.045881127364403, "department": "Engineering", "employee": "EMP0458", "salary": 59593918, "bonus": 4527810, "gender": "Male"}, {"x": 1.068, "y": 2.959245871102441, "department": "Engineering", "employee": "EMP0459", "salary": 56639403, "bonus": 2797835, "gender": "Male"}, {"x": 1.042, "y": 5.03289883236756, "department": "Product", "employee": "EMP0460", "salary": 34876344, "bonus": 3748419, "gender": "Female"}, {"x": 0.981, "y": 4.0620249325985345, "department": "Engineering", "employee": "EMP0461", "salary": 36020301, "bonus": 2665539, "gender": "Male"}, {"x": 0.851, "y": 3.991076715093431, "department": "Sales", "employee": "EMP0462", "salary": 21145293, "bonus": 1603423, "gender": "Female"}, {"x": 1.071, "y": 5.049107363860063, "department": "HR", "employee": "EMP0463", "salary": 26364984, "bonus": 3395671, "gender": "Female"}, {"x": 0.98, "y": 3.0170967713837995, "department": "Engineering", "employee": "EMP0464", "salary": 68296732, "bonus": 3041033, "gender": "Male"}, {"x": 0.903, "y": 2.9842876584397473, "department": "Operations", "employee": "EMP0465", "salary": 16692172, "bonus": 938476, "gender": "Male"}, {"x": 0.914, "y": 2.927197383035985, "department": "Engineering", "employee": "EMP0466", "salary": 37774710, "bonus": 1742263, "gender": "Female"}, {"x": 0.977, "y": 4.057915893714248, "department": "Engineering", "employee": "EMP0467", "salary": 46003933, "bonus": 3957300, "gender": "Female"}, {"x": 1.109, "y": 3.9237221197366194, "department": "Engineering", "employee": "EMP0468", "salary": 35887831, "bonus": 3156331, "gender": "Male"}, {"x": 1.001, "y": 2.9899227871662473, "department": "Engineering", "employee": "EMP0469", "salary": 30284492, "bonus": 1534273, "gender": "Male"}, {"x": 0.705, "y": 2.9863898277569496, "department": "Finance", "employee": "EMP0470", "salary": 15726546, "bonus": 762967, "gender": "Male"}, {"x": 0.857, "y": 4.057543745670202, "department": "Sales", "employee": "EMP0471", "salary": 47457174, "bonus": 3887670, "gender": "Female"}, {"x": 0.888, "y": 2.970781189658655, "department": "Operations", "employee": "EMP0472", "salary": 20983191, "bonus": 870701, "gender": "Female"}, {"x": 1.003, "y": 4.961148446906835, "department": "Product", "employee": "EMP0473", "salary": 47559687, "bonus": 7007819, "gender": "Female"}, {"x": 1.005, "y": 2.9383431398627593, "department": "Product", "employee": "EMP0474", "salary": 33631055, "bonus": 1648388, "gender": "Female"}, {"x": 1.09, "y": 2.9358933812877885, "department": "Engineering", "employee": "EMP0475", "salary": 57818525, "bonus": 3190968, "gender": "Female"}, {"x": 1.023, "y": 3.946904958826723, "department": "Engineering", "employee": "EMP0476", "salary": 45641946, "bonus": 3838797, "gender": "Female"}, {"x": 1.026, "y": 2.9430454804690704, "department": "Engineering", "employee": "EMP0477", "salary": 54388198, "bonus": 2876042, "gender": "Female"}, {"x": 1.034, "y": 2.960888724050885, "department": "Engineering", "employee": "EMP0478", "salary": 33464345, "bonus": 1559174, "gender": "Female"}, {"x": 0.944, "y": 2.9343405701568455, "department": "Engineering", "employee": "EMP0479", "salary": 58385406, "bonus": 3236377, "gender": "Female"}, {"x": 0.998, "y": 2.9690870749380167, "department": "Product", "employee": "EMP0480", "salary": 56263143, "bonus": 2617410, "gender": "Male"}, {"x": 0.931, "y": 2.9851642294867142, "department": "Sales", "employee": "EMP0481", "salary": 55158385, "bonus": 1988716, "gender": "Male"}, {"x": 1.016, "y": 4.94707056767811, "department": "Sales", "employee": "EMP0482", "salary": 25234673, "bonus": 2665953, "gender": "Female"}, {"x": 0.965, "y": 2.0183160686029473, "department": "Engineering", "employee": "EMP0483", "salary": 31210497, "bonus": 684267, "gender": "Female"}, {"x": 1.154, "y": 4.972046511389562, "department": "Product", "employee": "EMP0484", "salary": 30229117, "bonus": 3113259, "gender": "Male"}, {"x": 1.044, "y": 4.924347390786767, "department": "Operations", "employee": "EMP0485", "salary": 41570259, "bonus": 5831321, "gender": "Female"}, {"x": 0.862, "y": 4.929360285160571, "department": "Engineering", "employee": "EMP0486", "salary": 45697942, "bonus": 5243187, "gender": "Female"}, {"x": 1.205, "y": 4.982390353797369, "department": "Engineering", "employee": "EMP0487", "salary": 38987405, "bonus": 4979706, "gender": "Male"}, {"x": 0.977, "y": 2.9712066342144734, "department": "Engineering", "employee": "EMP0488", "salary": 40387316, "bonus": 2278682, "gender": "Female"}, {"x": 0.848, "y": 2.9860516499197614, "department": "Engineering", "employee": "EMP0489", "salary": 42041356, "bonus": 2051059, "gender": "Female"}, {"x": 1.066, "y": 2.971874846527498, "department": "Engineering", "employee": "EMP0490", "salary": 56503184, "bonus": 2663236, "gender": "Female"}, {"x": 0.985, "y": 3.980082105328533, "department": "Sales", "employee": "EMP0491", "salary": 41240704, "bonus": 3430344, "gender": "Female"}, {"x": 1.095, "y": 2.0524386237853784, "department": "HR", "employee": "EMP0492", "salary": 21093160, "bonus": 446340, "gender": "Male"}, {"x": 1.032, "y": 1.9393546021603085, "department": "Sales", "employee": "EMP0493", "salary": 25623338, "bonus": 411974, "gender": "Male"}, {"x": 1.125, "y": 2.9524095132823263, "department": "HR", "employee": "EMP0494", "salary": 20247085, "bonus": 1025173, "gender": "Female"}, {"x": 1.095, "y": 4.040341398235565, "department": "Operations", "employee": "EMP0495", "salary": 25867566, "bonus": 2366487, "gender": "Male"}, {"x": 0.955, "y": 3.013764652295698, "department": "Engineering", "employee": "EMP0496", "salary": 39502934, "bonus": 1703222, "gender": "Female"}, {"x": 1.042, "y": 3.998876710544373, "department": "Operations", "employee": "EMP0497", "salary": 23009806, "bonus": 2134951, "gender": "Male"}, {"x": 0.891, "y": 5.040382396584059, "department": "HR", "employee": "EMP0498", "salary": 21915307, "bonus": 3280077, "gender": "Male"}, {"x": 0.932, "y": 3.9816077887408223, "department": "Engineering", "employee": "EMP0499", "salary": 32421548, "bonus": 2645919, "gender": "Female"}, {"x": 1.08, "y": 3.9384130195013136, "department": "HR", "employee": "EMP0500", "salary": 20808351, "bonus": 1497990, "gender": "Female"}, {"x": 0.807, "y": 2.929701116464539, "department": "Product", "employee": "EMP0501", "salary": 23995049, "bonus": 1335148, "gender": "Male"}, {"x": 0.856, "y": 1.9943717653192532, "department": "Sales", "employee": "EMP0502", "salary": 35831571, "bonus": 607653, "gender": "Female"}, {"x": 0.961, "y": 3.9851322341745594, "department": "Sales", "employee": "EMP0503", "salary": 36182325, "bonus": 3195715, "gender": "Female"}, {"x": 0.972, "y": 1.9974674415932971, "department": "Engineering", "employee": "EMP0504", "salary": 29397159, "bonus": 555969, "gender": "Female"}, {"x": 1.107, "y": 2.9851990063590303, "department": "Sales", "employee": "EMP0505", "salary": 29426432, "bonus": 1066201, "gender": "Female"}, {"x": 1.106, "y": 2.9573984729215326, "department": "Product", "employee": "EMP0506", "salary": 31123492, "bonus": 1596828, "gender": "Female"}, {"x": 0.904, "y": 5.061784943364409, "department": "Operations", "employee": "EMP0507", "salary": 27397517, "bonus": 2862485, "gender": "Female"}, {"x": 1.014, "y": 4.963065558140368, "department": "Sales", "employee": "EMP0508", "salary": 26956535, "bonus": 3526213, "gender": "Male"}, {"x": 1.101, "y": 4.074155950052944, "department": "Sales", "employee": "EMP0509", "salary": 22905024, "bonus": 2074804, "gender": "Male"}, {"x": 0.983, "y": 4.028015588642966, "department": "Product", "employee": "EMP0510", "salary": 65119419, "bonus": 4450153, "gender": "Male"}, {"x": 0.988, "y": 2.959410575345729, "department": "Product", "employee": "EMP0511", "salary": 24176528, "bonus": 1287354, "gender": "Female"}, {"x": 1.018, "y": 3.0087531920093906, "department": "Operations", "employee": "EMP0512", "salary": 17593411, "bonus": 962882, "gender": "Male"}, {"x": 1.213, "y": 4.045634269864048, "department": "Product", "employee": "EMP0513", "salary": 52077739, "bonus": 4735349, "gender": "Female"}, {"x": 0.993, "y": 2.9687380547144957, "department": "Finance", "employee": "EMP0514", "salary": 38851815, "bonus": 2201706, "gender": "Female"}, {"x": 1.011, "y": 3.98507934742687, "department": "Engineering", "employee": "EMP0515", "salary": 41806345, "bonus": 3135772, "gender": "Male"}, {"x": 1.303, "y": 3.933425336892936, "department": "Engineering", "employee": "EMP0516", "salary": 53881237, "bonus": 4814654, "gender": "Male"}, {"x": 0.97, "y": 3.0217278391127973, "department": "Finance", "employee": "EMP0517", "salary": 41939744, "bonus": 2408574, "gender": "Female"}, {"x": 0.944, "y": 2.952553105095484, "department": "Product", "employee": "EMP0518", "salary": 28050115, "bonus": 1088870, "gender": "Male"}, {"x": 1.105, "y": 4.074865842035254, "department": "HR", "employee": "EMP0519", "salary": 25415874, "bonus": 2309734, "gender": "Female"}, {"x": 0.991, "y": 4.979728835273313, "department": "Operations", "employee": "EMP0520", "salary": 30019369, "bonus": 4378493, "gender": "Male"}, {"x": 0.866, "y": 4.077649394474254, "department": "Sales", "employee": "EMP0521", "salary": 51308214, "bonus": 3968052, "gender": "Female"}, {"x": 1.055, "y": 4.045123786026432, "department": "HR", "employee": "EMP0522", "salary": 38839763, "bonus": 3412983, "gender": "Female"}, {"x": 0.887, "y": 4.006005700770155, "department": "Engineering", "employee": "EMP0523", "salary": 47039594, "bonus": 3730149, "gender": "Female"}, {"x": 1.003, "y": 2.9878003930584813, "department": "Operations", "employee": "EMP0524", "salary": 30399805, "bonus": 1088487, "gender": "Male"}, {"x": 0.986, "y": 2.0658388370932963, "department": "Product", "employee": "EMP0525", "salary": 33012042, "bonus": 942232, "gender": "Male"}, {"x": 1.112, "y": 1.9922787201902772, "department": "Finance", "employee": "EMP0526", "salary": 33935591, "bonus": 838434, "gender": "Female"}, {"x": 0.965, "y": 3.9201601693780943, "department": "Engineering", "employee": "EMP0527", "salary": 47802266, "bonus": 3853793, "gender": "Male"}, {"x": 1.109, "y": 3.9943443285955365, "department": "Finance", "employee": "EMP0528", "salary": 23522834, "bonus": 1893207, "gender": "Female"}, {"x": 0.892, "y": 3.052699485565102, "department": "Product", "employee": "EMP0529", "salary": 29851715, "bonus": 1502388, "gender": "Female"}, {"x": 0.943, "y": 3.966279912773441, "department": "Sales", "employee": "EMP0530", "salary": 16507148, "bonus": 1139970, "gender": "Female"}, {"x": 0.92, "y": 3.075533088645198, "department": "Sales", "employee": "EMP0531", "salary": 17882977, "bonus": 935153, "gender": "Male"}, {"x": 0.913, "y": 2.9200868690731228, "department": "Finance", "employee": "EMP0532", "salary": 35723320, "bonus": 1593338, "gender": "Female"}, {"x": 1.082, "y": 4.069361090566886, "department": "Sales", "employee": "EMP0533", "salary": 64056362, "bonus": 5431077, "gender": "Female"}, {"x": 1.175, "y": 2.997149801580075, "department": "Finance", "employee": "EMP0534", "salary": 26230483, "bonus": 1328871, "gender": "Female"}, {"x": 1.056, "y": 4.015658840240108, "department": "Product", "employee": "EMP0535", "salary": 25840710, "bonus": 1684104, "gender": "Female"}, {"x": 1.023, "y": 3.0543180354595156, "department": "Engineering", "employee": "EMP0536", "salary": 54254864, "bonus": 2655163, "gender": "Female"}, {"x": 0.895, "y": 3.9808245623102687, "department": "Product", "employee": "EMP0537", "salary": 21920285, "bonus": 1621076, "gender": "Female"}, {"x": 0.947, "y": 3.976226867249535, "department": "Product", "employee": "EMP0538", "salary": 31691288, "bonus": 2808457, "gender": "Male"}, {"x": 0.914, "y": 3.0211531105193545, "department": "Sales", "employee": "EMP0539", "salary": 27664312, "bonus": 1015050, "gender": "Female"}, {"x": 1.133, "y": 4.013625466633659, "department": "Sales", "employee": "EMP0540", "salary": 30114586, "bonus": 2586087, "gender": "Male"}, {"x": 1.017, "y": 5.0016525474563975, "department": "Product", "employee": "EMP0541", "salary": 40810822, "bonus": 6093624, "gender": "Male"}, {"x": 1.046, "y": 3.9272775568502145, "department": "Operations", "employee": "EMP0542", "salary": 23097255, "bonus": 1861435, "gender": "Male"}, {"x": 0.999, "y": 2.038269271295177, "department": "Sales", "employee": "EMP0543", "salary": 19424367, "bonus": 437227, "gender": "Male"}, {"x": 1.122, "y": 4.010093052470607, "department": "Finance", "employee": "EMP0544", "salary": 51213537, "bonus": 3346237, "gender": "Female"}, {"x": 0.972, "y": 3.968102135765213, "department": "Engineering", "employee": "EMP0545", "salary": 67735477, "bonus": 5654544, "gender": "Female"}, {"x": 1.046, "y": 4.983248784182583, "department": "Engineering", "employee": "EMP0546", "salary": 43261438, "bonus": 5367653, "gender": "Male"}, {"x": 0.99, "y": 2.9396763143902995, "department": "HR", "employee": "EMP0547", "salary": 31257957, "bonus": 1327950, "gender": "Male"}, {"x": 1.078, "y": 3.9423440429271146, "department": "Engineering", "employee": "EMP0548", "salary": 57184530, "bonus": 5380401, "gender": "Male"}, {"x": 0.886, "y": 4.009036653040434, "department": "Product", "employee": "EMP0549", "salary": 61773068, "bonus": 5617508, "gender": "Male"}, {"x": 1.009, "y": 2.9647133277395716, "department": "Operations", "employee": "EMP0550", "salary": 23846666, "bonus": 1401425, "gender": "Female"}, {"x": 0.977, "y": 4.989113989127696, "department": "Engineering", "employee": "EMP0551", "salary": 26584772, "bonus": 3300052, "gender": "Male"}, {"x": 1.137, "y": 4.017671249514604, "department": "Engineering", "employee": "EMP0552", "salary": 74031175, "bonus": 6637943, "gender": "Female"}, {"x": 0.87, "y": 2.0731867477918344, "department": "Operations", "employee": "EMP0553", "salary": 15029264, "bonus": 430540, "gender": "Female"}, {"x": 0.943, "y": 2.970928630690493, "department": "Sales", "employee": "EMP0554", "salary": 19625330, "bonus": 1124598, "gender": "Female"}, {"x": 1.036, "y": 3.0291361593549353, "department": "Engineering", "employee": "EMP0555", "salary": 42828294, "bonus": 1515326, "gender": "Female"}, {"x": 1.105, "y": 2.9748216410102484, "department": "Sales", "employee": "EMP0556", "salary": 22990286, "bonus": 1157137, "gender": "Female"}, {"x": 1.109, "y": 2.961817685341406, "department": "Sales", "employee": "EMP0557", "salary": 23076948, "bonus": 910953, "gender": "Male"}, {"x": 1.071, "y": 3.0404310401770522, "department": "Sales", "employee": "EMP0558", "salary": 44840410, "bonus": 2321467, "gender": "Male"}, {"x": 1.108, "y": 3.992434892979876, "department": "HR", "employee": "EMP0559", "salary": 34981124, "bonus": 2751878, "gender": "Female"}, {"x": 0.82, "y": 4.959348525598379, "department": "Operations", "employee": "EMP0560", "salary": 19365655, "bonus": 2316207, "gender": "Female"}, {"x": 0.899, "y": 2.077283511545227, "department": "Operations", "employee": "EMP0561", "salary": 31765769, "bonus": 610692, "gender": "Female"}, {"x": 1.028, "y": 3.9746607687599944, "department": "Operations", "employee": "EMP0562", "salary": 31159603, "bonus": 2632474, "gender": "Female"}, {"x": 1.107, "y": 3.993567894648305, "department": "Sales", "employee": "EMP0563", "salary": 29417309, "bonus": 2212812, "gender": "Male"}, {"x": 1.014, "y": 4.015922186766216, "department": "Sales", "employee": "EMP0564", "salary": 45410388, "bonus": 3057792, "gender": "Male"}, {"x": 0.996, "y": 3.9225399385857798, "department": "Sales", "employee": "EMP0565", "salary": 24729341, "bonus": 2316558, "gender": "Female"}, {"x": 1.006, "y": 3.0306952096625874, "department": "Product", "employee": "EMP0566", "salary": 47704702, "bonus": 2644073, "gender": "Female"}, {"x": 1.109, "y": 3.023430926707098, "department": "HR", "employee": "EMP0567", "salary": 35010543, "bonus": 1731211, "gender": "Female"}, {"x": 1.248, "y": 2.9203276021585305, "department": "Operations", "employee": "EMP0568", "salary": 27561069, "bonus": 1641662, "gender": "Male"}, {"x": 1.066, "y": 2.996244632010793, "department": "Product", "employee": "EMP0569", "salary": 24790019, "bonus": 1207823, "gender": "Female"}, {"x": 0.94, "y": 4.064231199037526, "department": "Operations", "employee": "EMP0570", "salary": 37407690, "bonus": 2873960, "gender": "Male"}, {"x": 1.011, "y": 3.0276330246609877, "department": "Sales", "employee": "EMP0571", "salary": 25117453, "bonus": 1459627, "gender": "Male"}, {"x": 0.967, "y": 3.986106085247744, "department": "Engineering", "employee": "EMP0572", "salary": 83272695, "bonus": 7886468, "gender": "Female"}, {"x": 0.938, "y": 4.06324290835439, "department": "Operations", "employee": "EMP0573", "salary": 22164429, "bonus": 1779415, "gender": "Male"}, {"x": 1.046, "y": 4.032527948008748, "department": "Sales", "employee": "EMP0574", "salary": 27806855, "bonus": 2225991, "gender": "Male"}, {"x": 1.096, "y": 4.04199443863963, "department": "Sales", "employee": "EMP0575", "salary": 25852323, "bonus": 2215930, "gender": "Male"}, {"x": 1.204, "y": 3.0061010325922357, "department": "Operations", "employee": "EMP0576", "salary": 56261796, "bonus": 2093567, "gender": "Male"}, {"x": 0.986, "y": 4.045968837591076, "department": "Operations", "employee": "EMP0577", "salary": 51914264, "bonus": 3909476, "gender": "Male"}, {"x": 1.191, "y": 3.023855564178546, "department": "Sales", "employee": "EMP0578", "salary": 40594774, "bonus": 1714326, "gender": "Male"}, {"x": 0.934, "y": 1.9324036986096493, "department": "HR", "employee": "EMP0579", "salary": 27552983, "bonus": 303975, "gender": "Male"}, {"x": 1.053, "y": 3.924951603284564, "department": "Finance", "employee": "EMP0580", "salary": 41207978, "bonus": 2842368, "gender": "Female"}, {"x": 1.07, "y": 4.05313341834075, "department": "Finance", "employee": "EMP0581", "salary": 25545750, "bonus": 2279581, "gender": "Female"}, {"x": 1.053, "y": 3.0274580925049506, "department": "Operations", "employee": "EMP0582", "salary": 20927768, "bonus": 1221105, "gender": "Male"}, {"x": 0.92, "y": 3.02755934610774, "department": "Sales", "employee": "EMP0583", "salary": 45811082, "bonus": 2444435, "gender": "Female"}, {"x": 1.055, "y": 3.9764791571760645, "department": "Operations", "employee": "EMP0584", "salary": 31979667, "bonus": 2800550, "gender": "Female"}, {"x": 0.942, "y": 5.050044999571296, "department": "Engineering", "employee": "EMP0585", "salary": 49941183, "bonus": 7395697, "gender": "Female"}, {"x": 1.189, "y": 3.052394693614615, "department": "Product", "employee": "EMP0586", "salary": 62674816, "bonus": 2718469, "gender": "Male"}, {"x": 0.986, "y": 3.9772745184740437, "department": "Product", "employee": "EMP0587", "salary": 42308983, "bonus": 2997497, "gender": "Male"}, {"x": 1.05, "y": 3.948349861906941, "department": "Operations", "employee": "EMP0588", "salary": 18139478, "bonus": 1235611, "gender": "Male"}, {"x": 1.111, "y": 3.0428745350979205, "department": "Engineering", "employee": "EMP0589", "salary": 45923925, "bonus": 2566526, "gender": "Female"}, {"x": 1.117, "y": 5.031524821500534, "department": "Operations", "employee": "EMP0590", "salary": 33852124, "bonus": 4343344, "gender": "Male"}, {"x": 0.939, "y": 4.921349020153002, "department": "HR", "employee": "EMP0591", "salary": 29630955, "bonus": 3372571, "gender": "Female"}, {"x": 1.085, "y": 2.9940308050757416, "department": "HR", "employee": "EMP0592", "salary": 45005698, "bonus": 1949483, "gender": "Female"}, {"x": 0.934, "y": 3.069799655905951, "department": "HR", "employee": "EMP0593", "salary": 22997788, "bonus": 1087828, "gender": "Female"}, {"x": 0.95, "y": 1.9911324250809708, "department": "Operations", "employee": "EMP0594", "salary": 16413319, "bonus": 351686, "gender": "Male"}, {"x": 0.933, "y": 2.9554433223523433, "department": "Sales", "employee": "EMP0595", "salary": 41799714, "bonus": 2194543, "gender": "Male"}, {"x": 1.06, "y": 3.9231650671463263, "department": "Sales", "employee": "EMP0596", "salary": 32092537, "bonus": 2089199, "gender": "Female"}, {"x": 0.954, "y": 2.9649815174109393, "department": "Finance", "employee": "EMP0597", "salary": 27201724, "bonus": 1382033, "gender": "Male"}, {"x": 1.016, "y": 3.06742379034662, "department": "Product", "employee": "EMP0598", "salary": 38741110, "bonus": 1526999, "gender": "Female"}, {"x": 0.971, "y": 3.977251363028898, "department": "Sales", "employee": "EMP0599", "salary": 18869181, "bonus": 1584704, "gender": "Male"}, {"x": 1.127, "y": 2.934394643087722, "department": "Product", "employee": "EMP0600", "salary": 27578771, "bonus": 1177428, "gender": "Male"}, {"x": 1.008, "y": 2.0181508333983857, "department": "Finance", "employee": "EMP0601", "salary": 27301324, "bonus": 337547, "gender": "Female"}, {"x": 0.78, "y": 2.968508565197485, "department": "Operations", "employee": "EMP0602", "salary": 17227046, "bonus": 618829, "gender": "Male"}, {"x": 1.046, "y": 4.034849524761614, "department": "Operations", "employee": "EMP0603", "salary": 21943712, "bonus": 1459229, "gender": "Female"}, {"x": 1.101, "y": 3.9574812710048186, "department": "Finance", "employee": "EMP0604", "salary": 33606211, "bonus": 2990121, "gender": "Male"}, {"x": 0.865, "y": 3.999009387454148, "department": "Finance", "employee": "EMP0605", "salary": 22202973, "bonus": 1826839, "gender": "Male"}, {"x": 1.044, "y": 2.9780798685989334, "department": "Finance", "employee": "EMP0606", "salary": 45150149, "bonus": 2048862, "gender": "Male"}, {"x": 1.041, "y": 2.964921017280624, "department": "Sales", "employee": "EMP0607", "salary": 24575704, "bonus": 1337939, "gender": "Female"}, {"x": 0.8, "y": 3.064721214418468, "department": "Sales", "employee": "EMP0608", "salary": 16636584, "bonus": 870242, "gender": "Female"}, {"x": 1.067, "y": 4.033114881045851, "department": "Operations", "employee": "EMP0609", "salary": 32343968, "bonus": 2587408, "gender": "Male"}, {"x": 1.1, "y": 2.9534538114155953, "department": "Operations", "employee": "EMP0610", "salary": 43784447, "bonus": 1637192, "gender": "Female"}, {"x": 0.988, "y": 3.9513738870433133, "department": "Operations", "employee": "EMP0611", "salary": 29940863, "bonus": 2661694, "gender": "Male"}, {"x": 0.945, "y": 2.0513797553043798, "department": "HR", "employee": "EMP0612", "salary": 23249213, "bonus": 434608, "gender": "Male"}, {"x": 1.087, "y": 4.983373788727458, "department": "Finance", "employee": "EMP0613", "salary": 42532728, "bonus": 5284822, "gender": "Male"}, {"x": 0.957, "y": 3.0591865972010464, "department": "HR", "employee": "EMP0614", "salary": 28222120, "bonus": 1537383, "gender": "Female"}, {"x": 0.875, "y": 3.0110563570264883, "department": "Product", "employee": "EMP0615", "salary": 31611969, "bonus": 1810172, "gender": "Female"}, {"x": 0.798, "y": 3.999041811431023, "department": "HR", "employee": "EMP0616", "salary": 19629865, "bonus": 1395022, "gender": "Female"}, {"x": 1.048, "y": 3.00828562998029, "department": "Operations", "employee": "EMP0617", "salary": 19376262, "bonus": 1107551, "gender": "Male"}, {"x": 1.029, "y": 5.025574147389906, "department": "Finance", "employee": "EMP0618", "salary": 37628937, "bonus": 5375244, "gender": "Female"}, {"x": 0.993, "y": 4.010513127651424, "department": "HR", "employee": "EMP0619", "salary": 26359357, "bonus": 1972178, "gender": "Female"}, {"x": 1.031, "y": 2.0291813762223394, "department": "HR", "employee": "EMP0620", "salary": 32550169, "bonus": 631898, "gender": "Male"}, {"x": 0.922, "y": 4.010422437400257, "department": "Product", "employee": "EMP0621", "salary": 39580903, "bonus": 3235921, "gender": "Male"}, {"x": 1.106, "y": 3.9304577000000056, "department": "Operations", "employee": "EMP0622", "salary": 58217447, "bonus": 4316538, "gender": "Female"}, {"x": 1.079, "y": 3.940519423181979, "department": "Finance", "employee": "EMP0623", "salary": 42229057, "bonus": 3745538, "gender": "Female"}, {"x": 0.965, "y": 4.930407891425408, "department": "Sales", "employee": "EMP0624", "salary": 27657268, "bonus": 3354691, "gender": "Female"}, {"x": 1.111, "y": 3.961539916912989, "department": "HR", "employee": "EMP0625", "salary": 29483886, "bonus": 1964934, "gender": "Male"}, {"x": 0.929, "y": 3.0111845265096173, "department": "Operations", "employee": "EMP0626", "salary": 36961333, "bonus": 1809988, "gender": "Female"}, {"x": 1.082, "y": 4.956474428035024, "department": "Operations", "employee": "EMP0627", "salary": 17764583, "bonus": 2291737, "gender": "Female"}, {"x": 1.151, "y": 3.0036927935229527, "department": "Engineering", "employee": "EMP0628", "salary": 61026928, "bonus": 2877766, "gender": "Female"}, {"x": 0.857, "y": 3.0451604333809947, "department": "Product", "employee": "EMP0629", "salary": 34381512, "bonus": 2015930, "gender": "Female"}, {"x": 1.073, "y": 2.950696247634491, "department": "HR", "employee": "EMP0630", "salary": 18343372, "bonus": 1080712, "gender": "Female"}, {"x": 0.936, "y": 4.028476594714066, "department": "Engineering", "employee": "EMP0631", "salary": 49642714, "bonus": 4670746, "gender": "Male"}, {"x": 1.206, "y": 3.0787122165796883, "department": "Product", "employee": "EMP0632", "salary": 40355739, "bonus": 1646845, "gender": "Male"}, {"x": 0.858, "y": 3.0308777304622345, "department": "Operations", "employee": "EMP0633", "salary": 20281529, "bonus": 1136733, "gender": "Male"}, {"x": 0.694, "y": 3.0052706427746494, "department": "Engineering", "employee": "EMP0634", "salary": 18892784, "bonus": 1024815, "gender": "Female"}, {"x": 0.912, "y": 4.960467371559954, "department": "Engineering", "employee": "EMP0635", "salary": 37724397, "bonus": 5355604, "gender": "Male"}, {"x": 1.052, "y": 3.009618556360128, "department": "Operations", "employee": "EMP0636", "salary": 19455941, "bonus": 770697, "gender": "Female"}, {"x": 0.984, "y": 2.9926281797909198, "department": "Product", "employee": "EMP0637", "salary": 32925931, "bonus": 1910061, "gender": "Female"}, {"x": 0.968, "y": 5.070062459024327, "department": "Sales", "employee": "EMP0638", "salary": 20139747, "bonus": 2491197, "gender": "Female"}, {"x": 1.099, "y": 4.022554605809569, "department": "HR", "employee": "EMP0639", "salary": 56327446, "bonus": 4825821, "gender": "Female"}, {"x": 1.065, "y": 3.0708918758035066, "department": "HR", "employee": "EMP0640", "salary": 19162994, "bonus": 715010, "gender": "Female"}, {"x": 1.135, "y": 2.928298047606778, "department": "Operations", "employee": "EMP0641", "salary": 34405617, "bonus": 1587353, "gender": "Male"}, {"x": 1.225, "y": 4.070201492694616, "department": "Product", "employee": "EMP0642", "salary": 52608223, "bonus": 3989384, "gender": "Female"}, {"x": 1.222, "y": 2.9892077074579495, "department": "Finance", "employee": "EMP0643", "salary": 37284809, "bonus": 1386621, "gender": "Female"}, {"x": 1.082, "y": 4.07921703625545, "department": "Sales", "employee": "EMP0644", "salary": 53921176, "bonus": 4954971, "gender": "Female"}, {"x": 0.761, "y": 1.9638456954022856, "department": "Sales", "employee": "EMP0645", "salary": 15820429, "bonus": 186190, "gender": "Female"}, {"x": 1.046, "y": 4.028827756069059, "department": "HR", "employee": "EMP0646", "salary": 24058594, "bonus": 1839354, "gender": "Male"}, {"x": 0.975, "y": 3.9946538764185604, "department": "Product", "employee": "EMP0647", "salary": 46244924, "bonus": 3009314, "gender": "Female"}, {"x": 0.889, "y": 4.97783549489648, "department": "HR", "employee": "EMP0648", "salary": 36858093, "bonus": 4953439, "gender": "Male"}, {"x": 0.876, "y": 4.041443474344569, "department": "Product", "employee": "EMP0649", "salary": 26030846, "bonus": 2370118, "gender": "Female"}, {"x": 1.003, "y": 4.061408390666509, "department": "Sales", "employee": "EMP0650", "salary": 34205252, "bonus": 2283382, "gender": "Female"}, {"x": 1.118, "y": 2.955927712973314, "department": "Finance", "employee": "EMP0651", "salary": 26688874, "bonus": 1127509, "gender": "Female"}, {"x": 1.103, "y": 3.9644692849140064, "department": "HR", "employee": "EMP0652", "salary": 29281307, "bonus": 2669673, "gender": "Female"}, {"x": 1.082, "y": 3.9872099310546045, "department": "Operations", "employee": "EMP0653", "salary": 23892165, "bonus": 1562235, "gender": "Male"}, {"x": 1.038, "y": 2.9918178395226502, "department": "Engineering", "employee": "EMP0654", "salary": 42926049, "bonus": 1704611, "gender": "Male"}, {"x": 0.942, "y": 2.920825485458206, "department": "Operations", "employee": "EMP0655", "salary": 35029486, "bonus": 1629301, "gender": "Female"}, {"x": 1.154, "y": 4.951137302320845, "department": "Finance", "employee": "EMP0656", "salary": 59336703, "bonus": 7706795, "gender": "Female"}, {"x": 1.214, "y": 2.9330894242287857, "department": "Engineering", "employee": "EMP0657", "salary": 64356983, "bonus": 2617036, "gender": "Male"}, {"x": 1.089, "y": 4.011491138705817, "department": "Product", "employee": "EMP0658", "salary": 26661451, "bonus": 1767001, "gender": "Male"}, {"x": 1.041, "y": 3.9240595102194127, "department": "Finance", "employee": "EMP0659", "salary": 40734427, "bonus": 3569823, "gender": "Female"}, {"x": 1.039, "y": 4.037991068632159, "department": "HR", "employee": "EMP0660", "salary": 17759226, "bonus": 1656143, "gender": "Female"}, {"x": 1.143, "y": 3.076495297777115, "department": "Engineering", "employee": "EMP0661", "salary": 34557380, "bonus": 1708978, "gender": "Male"}, {"x": 0.931, "y": 2.987811241099567, "department": "Engineering", "employee": "EMP0662", "salary": 30138801, "bonus": 1216112, "gender": "Male"}, {"x": 0.982, "y": 2.9319104587042273, "department": "Operations", "employee": "EMP0663", "salary": 21677487, "bonus": 964440, "gender": "Female"}, {"x": 1.006, "y": 3.9599974658451997, "department": "Engineering", "employee": "EMP0664", "salary": 28913706, "bonus": 1914615, "gender": "Female"}, {"x": 0.869, "y": 4.94631705204156, "department": "Product", "employee": "EMP0665", "salary": 27176295, "bonus": 3112487, "gender": "Female"}, {"x": 1.201, "y": 3.9697289372239637, "department": "Engineering", "employee": "EMP0666", "salary": 32693075, "bonus": 2607255, "gender": "Female"}, {"x": 1.099, "y": 3.0201591499153313, "department": "Sales", "employee": "EMP0667", "salary": 37461433, "bonus": 1371754, "gender": "Female"}, {"x": 0.95, "y": 3.935476175579873, "department": "Engineering", "employee": "EMP0668", "salary": 44715795, "bonus": 3863660, "gender": "Female"}, {"x": 0.985, "y": 2.996794627227722, "department": "Engineering", "employee": "EMP0669", "salary": 64105059, "bonus": 3474493, "gender": "Female"}, {"x": 1.015, "y": 3.0492894518661777, "department": "Engineering", "employee": "EMP0670", "salary": 39220670, "bonus": 2037619, "gender": "Female"}, {"x": 1.025, "y": 4.014804923292662, "department": "Sales", "employee": "EMP0671", "salary": 34941554, "bonus": 3075806, "gender": "Male"}, {"x": 1.156, "y": 4.02020753733523, "department": "Engineering", "employee": "EMP0672", "salary": 61308118, "bonus": 4776650, "gender": "Female"}, {"x": 0.767, "y": 1.973488405752787, "department": "Sales", "employee": "EMP0673", "salary": 20393389, "bonus": 327536, "gender": "Female"}, {"x": 1.068, "y": 3.960065515335981, "department": "Sales", "employee": "EMP0674", "salary": 20771434, "bonus": 1646704, "gender": "Female"}, {"x": 0.817, "y": 3.937254504529925, "department": "Sales", "employee": "EMP0675", "salary": 21724341, "bonus": 1620951, "gender": "Male"}, {"x": 1.078, "y": 1.9581374740109476, "department": "Product", "employee": "EMP0676", "salary": 60786187, "bonus": 726213, "gender": "Male"}, {"x": 0.764, "y": 3.9745283148676367, "department": "Engineering", "employee": "EMP0677", "salary": 29509025, "bonus": 1976072, "gender": "Female"}, {"x": 0.868, "y": 4.928709257628481, "department": "Engineering", "employee": "EMP0678", "salary": 28075066, "bonus": 3632898, "gender": "Female"}, {"x": 0.955, "y": 2.9733741528030335, "department": "Engineering", "employee": "EMP0679", "salary": 36896260, "bonus": 1755126, "gender": "Male"}, {"x": 1.059, "y": 3.047057779117517, "department": "Engineering", "employee": "EMP0680", "salary": 56174685, "bonus": 3146317, "gender": "Female"}, {"x": 1.154, "y": 3.070967612353457, "department": "Engineering", "employee": "EMP0681", "salary": 33156257, "bonus": 1439676, "gender": "Female"}, {"x": 0.936, "y": 4.04411991548534, "department": "Finance", "employee": "EMP0682", "salary": 28576551, "bonus": 2228608, "gender": "Male"}, {"x": 0.986, "y": 4.019130648897326, "department": "Engineering", "employee": "EMP0683", "salary": 38115937, "bonus": 3281780, "gender": "Female"}, {"x": 1.053, "y": 4.042255771274174, "department": "Sales", "employee": "EMP0684", "salary": 19443164, "bonus": 1622195, "gender": "Male"}, {"x": 1.015, "y": 3.020055801208563, "department": "Sales", "employee": "EMP0685", "salary": 32351472, "bonus": 1484438, "gender": "Female"}, {"x": 0.949, "y": 4.0126295150814375, "department": "Finance", "employee": "EMP0686", "salary": 22653366, "bonus": 1881067, "gender": "Female"}, {"x": 0.89, "y": 2.9336855518514224, "department": "Product", "employee": "EMP0687", "salary": 23324646, "bonus": 1193593, "gender": "Male"}, {"x": 1.097, "y": 3.9297099112471514, "department": "Engineering", "employee": "EMP0688", "salary": 35479871, "bonus": 3332043, "gender": "Male"}, {"x": 1.091, "y": 4.925334988090271, "department": "Product", "employee": "EMP0689", "salary": 61532614, "bonus": 7271414, "gender": "Male"}, {"x": 0.975, "y": 2.97012470947514, "department": "Product", "employee": "EMP0690", "salary": 67964747, "bonus": 3265634, "gender": "Female"}, {"x": 1.143, "y": 3.0556307431380314, "department": "HR", "employee": "EMP0691", "salary": 62701675, "bonus": 2710728, "gender": "Male"}, {"x": 1.144, "y": 2.9304045150073126, "department": "Sales", "employee": "EMP0692", "salary": 38989668, "bonus": 1793013, "gender": "Female"}, {"x": 1.106, "y": 3.9404057265067127, "department": "Sales", "employee": "EMP0693", "salary": 29384679, "bonus": 2759206, "gender": "Male"}, {"x": 1.038, "y": 4.067058526041969, "department": "HR", "employee": "EMP0694", "salary": 23871723, "bonus": 2154284, "gender": "Male"}, {"x": 0.969, "y": 4.990706944530951, "department": "HR", "employee": "EMP0695", "salary": 25732812, "bonus": 3040145, "gender": "Female"}, {"x": 0.941, "y": 4.968235371840881, "department": "Product", "employee": "EMP0696", "salary": 44630877, "bonus": 5033322, "gender": "Female"}, {"x": 0.922, "y": 5.020189633884238, "department": "Finance", "employee": "EMP0697", "salary": 28125264, "bonus": 3890766, "gender": "Male"}, {"x": 1.021, "y": 3.930526441457066, "department": "Product", "employee": "EMP0698", "salary": 48402760, "bonus": 4187883, "gender": "Male"}, {"x": 1.12, "y": 4.0284103131959315, "department": "Finance", "employee": "EMP0699", "salary": 53805764, "bonus": 4688288, "gender": "Female"}, {"x": 0.942, "y": 3.0094812882568873, "department": "Product", "employee": "EMP0700", "salary": 23071559, "bonus": 1169899, "gender": "Male"}, {"x": 0.837, "y": 3.9671866832374683, "department": "Product", "employee": "EMP0701", "salary": 20483521, "bonus": 1752828, "gender": "Male"}, {"x": 0.793, "y": 3.9810328774472272, "department": "Engineering", "employee": "EMP0702", "salary": 30659334, "bonus": 2160155, "gender": "Female"}, {"x": 0.907, "y": 4.935332840224865, "department": "HR", "employee": "EMP0703", "salary": 37605926, "bonus": 5465729, "gender": "Male"}, {"x": 0.978, "y": 3.0403141372336244, "department": "Engineering", "employee": "EMP0704", "salary": 51888624, "bonus": 2293374, "gender": "Female"}, {"x": 1.047, "y": 2.9572979174430163, "department": "Product", "employee": "EMP0705", "salary": 44954879, "bonus": 2375375, "gender": "Male"}, {"x": 1.158, "y": 4.015932136520713, "department": "Finance", "employee": "EMP0706", "salary": 59544373, "bonus": 5648154, "gender": "Female"}, {"x": 1.083, "y": 4.025555845050821, "department": "Operations", "employee": "EMP0707", "salary": 25586248, "bonus": 2359560, "gender": "Female"}, {"x": 1.151, "y": 3.9216970472972528, "department": "Operations", "employee": "EMP0708", "salary": 27204084, "bonus": 2350435, "gender": "Female"}, {"x": 1.07, "y": 4.981427203970204, "department": "Operations", "employee": "EMP0709", "salary": 25275137, "bonus": 3787150, "gender": "Female"}, {"x": 1.153, "y": 3.0472263484336204, "department": "HR", "employee": "EMP0710", "salary": 34010839, "bonus": 1525979, "gender": "Female"}, {"x": 0.994, "y": 5.060790106797469, "department": "HR", "employee": "EMP0711", "salary": 29323687, "bonus": 3125787, "gender": "Female"}, {"x": 1.131, "y": 4.019076888681981, "department": "Sales", "employee": "EMP0712", "salary": 23523278, "bonus": 1728673, "gender": "Female"}, {"x": 0.858, "y": 4.974338635982181, "department": "Operations", "employee": "EMP0713", "salary": 34143985, "bonus": 4718145, "gender": "Female"}, {"x": 1.004, "y": 3.070013576359482, "department": "Finance", "employee": "EMP0714", "salary": 33045519, "bonus": 1371574, "gender": "Female"}, {"x": 0.927, "y": 3.045268662006822, "department": "Sales", "employee": "EMP0715", "salary": 48762799, "bonus": 2307685, "gender": "Female"}, {"x": 1.061, "y": 3.9926522821393164, "department": "Finance", "employee": "EMP0716", "salary": 25328252, "bonus": 1853616, "gender": "Male"}, {"x": 0.93, "y": 1.972510987028853, "department": "Sales", "employee": "EMP0717", "salary": 28135058, "bonus": 780673, "gender": "Female"}, {"x": 1.033, "y": 4.950797010788925, "department": "Operations", "employee": "EMP0718", "salary": 31303444, "bonus": 3257222, "gender": "Male"}, {"x": 1.158, "y": 1.9364303445962532, "department": "Operations", "employee": "EMP0719", "salary": 24286979, "bonus": 704758, "gender": "Male"}, {"x": 1.151, "y": 3.0152280172268147, "department": "Operations", "employee": "EMP0720", "salary": 30958020, "bonus": 1333649, "gender": "Male"}];
+  const levels = ["L1 Analyst", "L2 Associate", "L3 Specialist", "L4 Senior", "L5 Manager"];
+  const filters = document.querySelector("#filters");
+  const rows = document.querySelector("#deptRows");
+  const sortableHeaders = document.querySelectorAll("th[data-sort]");
+  let active = "All";
+  let sortState = { key: "department", direction: "asc" };
+
+  function formatVnd(value) {
+    return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+  }
+
+  function compactVnd(value) {
+    if (Math.abs(value) >= 1000000000) return `${(value / 1000000000).toFixed(1)}B`;
+    return `${Math.round(value / 1000000)}M`;
+  }
+
+  function renderFilters() {
+    filters.innerHTML = "";
+    ["All", ...departments.map(item => item.department)].forEach(name => {
+      const button = document.createElement("button");
+      button.textContent = name;
+      button.className = name === active ? "active" : "";
+      button.addEventListener("click", () => {
+        active = name;
+        renderFilters();
+        renderRows();
+      });
+      filters.appendChild(button);
+    });
+  }
+
+  function getVisibleDepartments() {
+    const visible = active === "All" ? [...departments] : departments.filter(item => item.department === active);
+    return visible.sort((a, b) => {
+      const left = a[sortState.key];
+      const right = b[sortState.key];
+      const result = typeof left === "string"
+        ? left.localeCompare(right)
+        : Number(left) - Number(right);
+      return sortState.direction === "asc" ? result : -result;
+    });
+  }
+
+  function updateSortIndicators() {
+    sortableHeaders.forEach(header => {
+      header.classList.toggle("sorted-asc", header.dataset.sort === sortState.key && sortState.direction === "asc");
+      header.classList.toggle("sorted-desc", header.dataset.sort === sortState.key && sortState.direction === "desc");
+    });
+  }
+
+  function renderRows() {
+    rows.innerHTML = "";
+    getVisibleDepartments().forEach(item => {
+      const riskClass = item.review_rate >= 25 ? "badge risk" : "badge";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${item.department}</td>
+        <td>${item.headcount}</td>
+        <td>${formatVnd(item.avg_salary)}</td>
+        <td>${item.avg_rating}</td>
+        <td>${item.avg_compa}</td>
+        <td>${item.budget_utilization}%</td>
+        <td><span class="${riskClass}">${item.review_rate}%</span></td>
+        <td>${item.below_range}</td>
+        <td>${item.above_range}</td>
+        <td>${compactVnd(item.fix_cost)}</td>
+      `;
+      rows.appendChild(tr);
+    });
+    updateSortIndicators();
+  }
+
+  sortableHeaders.forEach(header => {
+    header.addEventListener("click", () => {
+      const key = header.dataset.sort;
+      sortState = {
+        key,
+        direction: sortState.key === key && sortState.direction === "asc" ? "desc" : "asc"
+      };
+      renderRows();
+    });
+  });
+
+  const chartColors = {
+    espresso: "#2a1b14",
+    caramel: "#7a521b",
+    tan: "#c9a56f",
+    sand: "#e5dac8",
+    muted: "#756a5f",
+    danger: "#9b3d21",
+    green: "#4f6b3d",
+    gold: "#d1a14d",
+    cream: "#fbf7ef"
+  };
+  const palette = ["#7a521b", "#c9a56f", "#2a1b14", "#9b3d21", "#4f6b3d", "#756a5f"];
+
+  const rangePlugin = {
+    id: "rangePlugin",
+    afterDatasetsDraw(chart) {
+      if (chart.canvas.id !== "scatterChart") return;
+      const {ctx, chartArea, scales} = chart;
+      const x = scales.x;
+      [0.88, 1.16].forEach(value => {
+        const px = x.getPixelForValue(value);
+        ctx.save();
+        ctx.strokeStyle = "rgba(155, 61, 33, .65)";
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(px, chartArea.top);
+        ctx.lineTo(px, chartArea.bottom);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+  };
+
+  if (typeof Chart !== "undefined") {
+    Chart.register(rangePlugin);
+  }
+
+  function baseOptions({ indexAxis = "x", stacked = false, yBeginAtZero = true, xBeginAtZero = true, tooltipLabel = undefined, legend = false } = {}) {
+    return {
+      indexAxis,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: legend, labels: { color: chartColors.espresso, boxWidth: 14 } },
+        tooltip: {
+          backgroundColor: chartColors.espresso,
+          titleColor: "#fffdfa",
+          bodyColor: "#f4eadc",
+          padding: 12,
+          callbacks: tooltipLabel ? { label: tooltipLabel } : undefined
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: xBeginAtZero,
+          stacked,
+          grid: { color: "rgba(42, 27, 20, 0.10)" },
+          ticks: { color: chartColors.muted }
+        },
+        y: {
+          beginAtZero: yBeginAtZero,
+          stacked,
+          grid: { color: indexAxis === "y" ? "transparent" : "rgba(42, 27, 20, 0.10)" },
+          ticks: { color: chartColors.espresso }
+        }
+      }
+    };
+  }
+
+  function fitCanvas(canvas) {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const scale = window.devicePixelRatio || 1;
+    canvas.width = Math.max(320, Math.floor(rect.width * scale));
+    canvas.height = Math.max(220, Math.floor(rect.height * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+    return { ctx, width: canvas.width / scale, height: canvas.height / scale };
+  }
+
+  function drawFallbackBars(canvasId, labels, values, { horizontal = false, formatter = value => value } = {}) {
+    const canvas = document.querySelector(canvasId);
+    const { ctx, width, height } = fitCanvas(canvas);
+    const max = Math.max(...values, 1);
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = chartColors.cream;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = chartColors.muted;
+    ctx.font = "12px Inter, sans-serif";
+    if (horizontal) {
+      const left = 110;
+      const barHeight = Math.min(26, (height - 30) / labels.length - 8);
+      labels.forEach((label, index) => {
+        const y = 20 + index * ((height - 30) / labels.length);
+        const barWidth = (width - left - 78) * (values[index] / max);
+        ctx.fillStyle = chartColors.espresso;
+        ctx.fillText(label, 8, y + barHeight * .72);
+        ctx.fillStyle = index % 2 ? chartColors.tan : chartColors.caramel;
+        ctx.fillRect(left, y, Math.max(3, barWidth), barHeight);
+        ctx.fillStyle = chartColors.muted;
+        ctx.fillText(formatter(values[index]), left + barWidth + 8, y + barHeight * .72);
+      });
+    } else {
+      const bottom = height - 48;
+      const gap = 12;
+      const barWidth = Math.max(20, (width - 42 - gap * labels.length) / labels.length);
+      labels.forEach((label, index) => {
+        const x = 26 + index * (barWidth + gap);
+        const barHeight = (bottom - 18) * (values[index] / max);
+        ctx.fillStyle = index % 2 ? chartColors.tan : chartColors.caramel;
+        ctx.fillRect(x, bottom - barHeight, barWidth, barHeight);
+        ctx.save();
+        ctx.translate(x + 3, bottom + 10);
+        ctx.rotate(-Math.PI / 5);
+        ctx.fillStyle = chartColors.muted;
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+      });
+    }
+  }
+
+  function drawFallbackScatter() {
+    const canvas = document.querySelector("#scatterChart");
+    const { ctx, width, height } = fitCanvas(canvas);
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = chartColors.cream;
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = "rgba(42, 27, 20, .2)";
+    ctx.strokeRect(44, 20, width - 72, height - 58);
+    scatterRows.forEach(item => {
+      const x = 44 + ((item.x - .65) / .7) * (width - 72);
+      const y = height - 38 - ((item.y - 1.7) / 3.6) * (height - 58);
+      const colorIndex = departments.findIndex(dept => dept.department === item.department);
+      ctx.fillStyle = palette[Math.max(0, colorIndex) % palette.length];
+      ctx.beginPath();
+      ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = chartColors.muted;
+    ctx.font = "12px Inter, sans-serif";
+    ctx.fillText("Compa-ratio", width / 2 - 34, height - 8);
+    ctx.save();
+    ctx.translate(14, height / 2 + 44);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Performance rating", 0, 0);
+    ctx.restore();
+  }
+
+  function renderCanvasFallbacks() {
+    const labels = departments.map(item => item.department);
+    drawFallbackBars("#salaryChart", labels, departments.map(item => item.avg_salary), { horizontal: true, formatter: compactVnd });
+    drawFallbackBars("#meritChart", labels, departments.map(item => item.budget_utilization), { formatter: value => `${value}%` });
+    drawFallbackBars("#reviewChart", labels, departments.map(item => item.review_rate), { horizontal: true, formatter: value => `${value}%` });
+    drawFallbackBars("#outlierChart", labels, departments.map(item => item.below_range + item.above_range), { horizontal: true, formatter: value => `${value}` });
+    drawFallbackBars("#compaHistogram", compaBins.map(item => item.label), compaBins.map(item => item.count));
+    drawFallbackBars("#genderChart", labels, genderByDepartment.map(item => Math.abs(item.gap)), { formatter: value => `${value}% gap` });
+    drawFallbackScatter();
+    drawFallbackBars("#performanceChart", performance.map(item => `R${item.rating}`), performance.map(item => item.avg_bonus_pct), { formatter: value => `${value}%` });
+    drawFallbackBars("#fixCostChart", labels, departments.map(item => item.fix_cost), { horizontal: true, formatter: compactVnd });
+    drawFallbackBars("#locationChart", locations.map(item => item.location), locations.map(item => item.avg_salary), { formatter: compactVnd });
+    drawFallbackBars("#headcountChart", labels, departments.map(item => item.headcount), { horizontal: true });
+  }
+
+  function renderCharts() {
+    const labels = departments.map(item => item.department);
+    const maxReview = Math.max(...departments.map(item => item.review_rate));
+    const reviewMax = Math.ceil((maxReview + 3) / 5) * 5;
+
+    if (typeof Chart === "undefined") {
+      renderCanvasFallbacks();
+      return;
+    }
+
+    new Chart(document.querySelector("#salaryChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          data: departments.map(item => item.avg_salary),
+          backgroundColor: chartColors.caramel,
+          borderRadius: 8,
+          maxBarThickness: 28
+        }]
+      },
+      options: baseOptions({
+        indexAxis: "y",
+        tooltipLabel: context => `${context.label}: ${compactVnd(context.raw)} VND`
+      })
+    });
+
+    new Chart(document.querySelector("#meritChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          data: departments.map(item => item.budget_utilization),
+          backgroundColor: chartColors.tan,
+          borderRadius: 8,
+          maxBarThickness: 42
+        }]
+      },
+      options: baseOptions({
+        tooltipLabel: context => `${context.label}: ${context.raw}%`,
+      })
+    });
+
+    const reviewOptions = baseOptions({
+      indexAxis: "y",
+      tooltipLabel: context => `${context.label}: ${context.raw}%`
+    });
+    reviewOptions.scales.x.suggestedMax = reviewMax;
+    new Chart(document.querySelector("#reviewChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          data: departments.map(item => item.review_rate),
+          backgroundColor: chartColors.espresso,
+          borderRadius: 8,
+          maxBarThickness: 26
+        }]
+      },
+      options: reviewOptions
+    });
+
+    new Chart(document.querySelector("#outlierChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          { label: "Below range", data: outliersByDepartment.map(item => item["Below range"]), backgroundColor: chartColors.danger, borderRadius: 6 },
+          { label: "In range", data: outliersByDepartment.map(item => item["In range"]), backgroundColor: chartColors.sand, borderRadius: 6 },
+          { label: "Above range", data: outliersByDepartment.map(item => item["Above range"]), backgroundColor: chartColors.green, borderRadius: 6 }
+        ]
+      },
+      options: baseOptions({ indexAxis: "y", stacked: true, legend: true })
+    });
+
+    new Chart(document.querySelector("#compaHistogram"), {
+      type: "bar",
+      data: {
+        labels: compaBins.map(item => item.label),
+        datasets: [{
+          data: compaBins.map(item => item.count),
+          backgroundColor: compaBins.map(item => item.label.includes("<") || item.label.includes(">") ? chartColors.danger : chartColors.caramel),
+          borderRadius: 8,
+          maxBarThickness: 44
+        }]
+      },
+      options: baseOptions({ tooltipLabel: context => `${context.raw} employees` })
+    });
+
+    new Chart(document.querySelector("#genderChart"), {
+      type: "bar",
+      data: {
+        labels: genderByDepartment.map(item => item.department),
+        datasets: [
+          { label: "Female", data: genderByDepartment.map(item => item.Female), backgroundColor: chartColors.tan, borderRadius: 6 },
+          { label: "Male", data: genderByDepartment.map(item => item.Male), backgroundColor: chartColors.espresso, borderRadius: 6 }
+        ]
+      },
+      options: baseOptions({
+        legend: true,
+        tooltipLabel: context => `${context.dataset.label}: ${compactVnd(context.raw)} VND`
+      })
+    });
+
+    const scatterDatasets = labels.map((department, index) => ({
+      label: department,
+      data: scatterRows.filter(item => item.department === department),
+      backgroundColor: palette[index % palette.length],
+      pointRadius: 4,
+      pointHoverRadius: 7
+    }));
+    const scatterOptions = baseOptions({ legend: true, xBeginAtZero: false, yBeginAtZero: false });
+    scatterOptions.scales.x.min = 0.65;
+    scatterOptions.scales.x.max = 1.35;
+    scatterOptions.scales.x.title = { display: true, text: "Compa-ratio", color: chartColors.muted };
+    scatterOptions.scales.y.min = 1.7;
+    scatterOptions.scales.y.max = 5.3;
+    scatterOptions.scales.y.title = { display: true, text: "Performance rating", color: chartColors.muted };
+    scatterOptions.plugins.tooltip.callbacks = {
+      label: context => {
+        const item = context.raw;
+        return `${item.employee} | ${item.department} | rating ${Math.round(item.y)} | compa ${item.x.toFixed(2)} | ${compactVnd(item.salary)}`;
+      }
+    };
+    new Chart(document.querySelector("#scatterChart"), {
+      type: "scatter",
+      data: { datasets: scatterDatasets },
+      options: scatterOptions
+    });
+
+    new Chart(document.querySelector("#performanceChart"), {
+      type: "line",
+      data: {
+        labels: performance.map(item => `Rating ${item.rating}`),
+        datasets: [
+          { label: "Avg bonus %", data: performance.map(item => item.avg_bonus_pct), borderColor: chartColors.espresso, backgroundColor: chartColors.espresso, tension: .25 },
+          { label: "Avg merit %", data: performance.map(item => item.avg_merit_pct), borderColor: chartColors.tan, backgroundColor: chartColors.tan, tension: .25 }
+        ]
+      },
+      options: baseOptions({ legend: true, tooltipLabel: context => `${context.dataset.label}: ${context.raw}%` })
+    });
+
+    new Chart(document.querySelector("#fixCostChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          data: departments.map(item => item.fix_cost),
+          backgroundColor: chartColors.danger,
+          borderRadius: 8,
+          maxBarThickness: 30
+        }]
+      },
+      options: baseOptions({
+        indexAxis: "y",
+        tooltipLabel: context => `${context.label}: ${compactVnd(context.raw)} VND`
+      })
+    });
+
+    new Chart(document.querySelector("#locationChart"), {
+      type: "bar",
+      data: {
+        labels: locations.map(item => item.location),
+        datasets: [
+          { type: "bar", label: "Avg salary", yAxisID: "salary", data: locations.map(item => item.avg_salary), backgroundColor: chartColors.caramel, borderRadius: 8 },
+          { type: "line", label: "Avg compa-ratio", yAxisID: "compa", data: locations.map(item => item.avg_compa), borderColor: chartColors.espresso, backgroundColor: chartColors.espresso, tension: .25 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: chartColors.espresso, boxWidth: 14 } },
+          tooltip: { backgroundColor: chartColors.espresso, titleColor: "#fffdfa", bodyColor: "#f4eadc", padding: 12 }
+        },
+        scales: {
+          x: { ticks: { color: chartColors.espresso }, grid: { color: "transparent" } },
+          salary: {
+            type: "linear",
+            position: "left",
+            beginAtZero: true,
+            ticks: { color: chartColors.muted, callback: value => compactVnd(value) },
+            grid: { color: "rgba(42, 27, 20, 0.10)" }
+          },
+          compa: {
+            type: "linear",
+            position: "right",
+            min: .85,
+            max: 1.1,
+            ticks: { color: chartColors.muted },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+
+    new Chart(document.querySelector("#headcountChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: levels.map((level, index) => ({
+          label: level,
+          data: headcountByLevel.map(item => item[level]),
+          backgroundColor: palette[index % palette.length],
+          borderRadius: 6
+        }))
+      },
+      options: baseOptions({ indexAxis: "y", stacked: true, legend: true })
+    });
+  }
+
+  renderFilters();
+  renderRows();
+  renderCharts();
+</script>
+</body>
+</html>
