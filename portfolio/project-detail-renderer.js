@@ -114,11 +114,141 @@ function colorWithAlpha(color, alpha) {
   return color;
 }
 
+function cloneData(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function normalizeFilterValue(value = "") {
+  return String(value)
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/\+/g, "plus")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 function chartValueSuffix(chart, dataset) {
   return dataset?.unit ?? chart.unit ?? "";
 }
 
-function chartConfig(study) {
+function selectedFilterLabel(study, filterValue) {
+  const config = study.dashboard?.filterConfig;
+  return config?.options?.[filterValue]?.label || config?.options?.all?.label || "All";
+}
+
+function filterOptionIds(study) {
+  return Object.keys(study.dashboard?.filterConfig?.options || { all: { label: "All" } });
+}
+
+function filterChartMatchesValue(chart, filterValue) {
+  if (filterValue === "all") return true;
+  const values = chart.filterValues || (chart.filterValue ? [chart.filterValue] : chart.variant ? [chart.variant] : []);
+  return values.includes(filterValue);
+}
+
+function isChartVisible(chart, filterValue) {
+  if (filterValue === "all" || !chart.filter || chart.filter === "all" || chart.filter === "split") {
+    return true;
+  }
+  if (chart.filter === "dept" || chart.filter === "dimension") {
+    return filterChartMatchesValue(chart, filterValue);
+  }
+  if (typeof chart.filter === "object" && chart.filter.type === "hide") {
+    return chart.filter.value !== filterValue;
+  }
+  return true;
+}
+
+function labelMatchesFilter(label, filterValue) {
+  const normalized = normalizeFilterValue(label);
+  if (filterValue === "loyalty") {
+    return normalized.includes("loyalty") && !normalized.includes("non-loyalty");
+  }
+  if (filterValue === "non-loyalty") {
+    return normalized.includes("non-loyalty");
+  }
+  if (filterValue === "electric-scooter") {
+    return normalized.includes("electric") || normalized.includes("electric-scooter");
+  }
+  if (filterValue === "sales-marketing") {
+    return normalized.includes("sales") || normalized.includes("marketing");
+  }
+  return normalized === filterValue || normalized.includes(filterValue);
+}
+
+function pointDimValue(label, filterValue) {
+  return filterValue !== "all" && !labelMatchesFilter(label, filterValue);
+}
+
+function employeeFilterSubtitle(chart, filterValue, label) {
+  const data = window.caseStudies
+    ?.find((study) => study.id === "employee-promotion")
+    ?.dashboard?.departmentData?.[filterValue];
+  if (!data) return chart.subtitle;
+  if (chart.title === "Promotion Volume And Rate By Department") {
+    return `${label} accounts for ${data.employeeShare}% of employees with a ${data.promotionRate}% promotion rate.`;
+  }
+  if (chart.title === "Department Readiness Signals") {
+    return `${label} is shown against R&D's 100 baseline across promotion, KPI, awards, training, and previous-rating signals.`;
+  }
+  if (chart.title === "Average Training Score") {
+    return data.trainingScore == null ? `${label} does not have a training-score benchmark in this dashboard.` : `${label}'s average training score is ${data.trainingScore}.`;
+  }
+  if (chart.title === "KPI & Award Achievement By Department") {
+    return data.kpiRate == null ? `${label} does not have a KPI/award benchmark in this dashboard.` : `${label}'s KPI and award readiness score is ${data.kpiRate}%.`;
+  }
+  return chart.subtitle;
+}
+
+function filteredChart(chart, study, filterValue) {
+  const current = filterValue || "all";
+  const next = cloneData(chart);
+  if (current === "all" || chart.filter !== "split") {
+    return next;
+  }
+
+  const label = selectedFilterLabel(study, current);
+  if (study.id === "employee-promotion") {
+    next.subtitle = employeeFilterSubtitle(next, current, label);
+  } else if (study.id === "delivery-performance" && chart.title === "Vehicle Choice By Condition") {
+    next.subtitle = `${label} performance is emphasized; other vehicle bars are dimmed for comparison.`;
+  } else if (study.id === "delivery-performance" && chart.title === "Harsh Weather Service Quality") {
+    next.subtitle = `${label} scenarios stay emphasized while other harsh-weather profiles recede.`;
+  } else if (study.id === "loyalty-retention") {
+    next.subtitle = `${label} is emphasized so the segment comparison remains visible without hiding the broader context.`;
+  }
+
+  if (next.filterMode === "seriesKeepReference") {
+    const selectedSeries = next.series
+      .map((series, index) => ({ series, index, id: normalizeFilterValue(series) }))
+      .filter((item) => item.id === current || item.id === next.referenceValue);
+    if (selectedSeries.length) {
+      next.series = selectedSeries.map((item) => item.series);
+      next.groups = next.groups.map((group) => ({
+        ...group,
+        values: selectedSeries.map((item) => group.values[item.index])
+      }));
+    }
+    return next;
+  }
+
+  if (next.filterMode === "series") {
+    next.series = next.series.map((series) => ({ label: series, _dim: !labelMatchesFilter(series, current) }));
+    return next;
+  }
+
+  if (Array.isArray(next.values)) {
+    next.values = next.values.map((item) => ({ ...item, _dim: pointDimValue(item.label, current) }));
+  }
+
+  if (Array.isArray(next.groups)) {
+    next.groups = next.groups.map((group) => ({ ...group, _dim: pointDimValue(group.label, current) }));
+  }
+
+  return next;
+}
+
+function chartConfig(study, filterValue = "all") {
   const charts = study.dashboard.charts || [];
   const theme = study.dashboard.theme || {};
   const colors = chartColors(theme);
@@ -126,13 +256,14 @@ function chartConfig(study) {
   let chartIndex = 0;
   const configs = [];
 
-  charts.forEach((chart) => {
-    if (chart.type === "heatmap" || chart.type === "table" || chart.type === "funnel") {
-      configs.push({ ...chart, _chartIndex: -1, _render: "static" });
+  charts.filter((chart) => isChartVisible(chart, filterValue)).forEach((chart) => {
+    const activeChart = filteredChart(chart, study, filterValue);
+    if (activeChart.type === "heatmap" || activeChart.type === "table" || activeChart.type === "funnel" || activeChart.type === "process" || activeChart.type === "reportGrid") {
+      configs.push({ ...activeChart, _chartIndex: -1, _render: "static" });
       return;
     }
     const id = `chart-canvas-${chartIndex}`;
-    const cfg = { ...chart, _chartIndex: chartIndex, _id: id, _render: "chart" };
+    const cfg = { ...activeChart, _chartIndex: chartIndex, _id: id, _render: "chart" };
     configs.push(cfg);
     chartIndex++;
   });
@@ -140,22 +271,32 @@ function chartConfig(study) {
   return { configs, chartCount: chartIndex, colors };
 }
 
-function chartGrid(study) {
-  const { configs, chartCount, colors } = chartConfig(study);
+function chartGrid(study, filterValue = "all") {
+  const { configs } = chartConfig(study, filterValue);
   const theme = study.dashboard.theme || {};
   if (!configs.length) return "";
 
-  const wideTypes = ["line", "combo", "heatmap", "table", "funnel"];
+  const wideTypes = ["line", "combo", "heatmap", "table", "funnel", "process", "reportGrid"];
+  const compactTypes = ["doughnut", "pie", "horizontalBar"];
 
   return `
     <div class="case-chart-grid">
       ${configs
         .map((chart, index) => {
-          const isWide = wideTypes.includes(chart.type) || chart.fullWidth;
-          const wideClass = isWide ? " is-wide" : "";
+          let span = chart.span || 6;
+          if (!chart.span) {
+            if (chart.fullWidth || wideTypes.includes(chart.type) || chart.type === "scatter" || chart.type === "bubble") {
+              span = 12;
+            } else if (compactTypes.includes(chart.type)) {
+              span = 4;
+            }
+          }
+          const spanClass = span === 12 ? " is-wide" : span <= 4 ? " is-third" : "";
+          const spanAttr = span !== 6 ? `style="grid-column: span ${span}"` : null;
+          const variantClass = chart.variant ? ` variant-${chart.variant}` : "";
           const typeClass = `chart-${chart.type}`;
           return `
-            <article class="case-panel chart-panel ${typeClass}${wideClass}" data-chart-index="${index}">
+            <article class="case-panel chart-panel ${typeClass}${spanClass}${variantClass}"${spanAttr ? ` ${spanAttr}` : ""} data-chart-index="${index}">
               <div class="case-panel-heading">
                 <span>Dashboard View</span>
                 <h3>${chart.title}</h3>
@@ -180,6 +321,12 @@ function staticChart(chart, theme) {
   if (chart.type === "funnel") {
     return funnelMarkup(chart, theme);
   }
+  if (chart.type === "process") {
+    return processMarkup(chart);
+  }
+  if (chart.type === "reportGrid") {
+    return reportGridMarkup(chart);
+  }
   return "";
 }
 
@@ -188,9 +335,14 @@ function heatmapMarkup(chart, theme) {
   const allValues = chart.rows.flatMap((row) => row.values);
   const maxValue = Math.max(...allValues);
   const unit = chart.unit || "%";
+  const cornerLabel = chart.cornerLabel || "";
+  const allVals = chart.rows.flatMap(r => r.values);
+  const minVal = Math.min(...allVals);
+  const valRange = maxValue - minVal || 1;
+  const scale = chart.opacityScale;
   return `
     <div class="case-chart case-heatmap" style="--heat-columns:${chart.columns.length}">
-      <div class="case-heat-row"><span></span>${chart.columns.map((c) => `<b>${c}</b>`).join("")}</div>
+      <div class="case-heat-row"><span>${cornerLabel}</span>${chart.columns.map((c) => `<b>${c}</b>`).join("")}</div>
       ${chart.rows
         .map(
           (row) => `
@@ -198,7 +350,14 @@ function heatmapMarkup(chart, theme) {
             <span>${row.label}</span>
             ${row.values
               .map((v) => {
-                const opacity = Math.max(0.12, Math.min(0.95, v / maxValue));
+                let opacity;
+                if (scale === "log") {
+                  opacity = Math.min(0.95, 0.15 + 0.8 * Math.log10(v + 1) / Math.log10(maxValue + 1));
+                } else if (scale === "range") {
+                  opacity = 0.15 + 0.8 * (v - minVal) / valRange;
+                } else {
+                  opacity = Math.max(0.12, Math.min(0.95, v / maxValue));
+                }
                 return `<i style="background:rgba(${accentRgb},${opacity});color:${opacity >= 0.5 ? "#fff" : "#222"}">${v}${unit}</i>`;
               })
               .join("")}
@@ -211,12 +370,65 @@ function heatmapMarkup(chart, theme) {
 }
 
 function tableMarkup(chart) {
+  const highlights = chart.highlights || [];
+  const isHL = (ri, ci) => highlights.some(h => h[0] === ri && h[1] === ci);
   return `
     <div class="case-chart case-model-table">
       <table>
         <thead><tr>${chart.columns.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
-        <tbody>${chart.rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody>
+        <tbody>${chart.rows.map((row, ri) => `<tr>${row.map((cell, ci) => `<td class="${isHL(ri, ci) ? "is-best" : ""}">${cell}</td>`).join("")}</tr>`).join("")}</tbody>
       </table>
+    </div>
+  `;
+}
+
+function reportGridMarkup(chart) {
+  return `
+    <div class="case-chart case-report-grid">
+      ${chart.groups.map((group) => `
+        <section class="case-report-group">
+          <div class="case-report-group-head">
+            <span>${group.label}</span>
+            <strong>${group.summary}</strong>
+          </div>
+          <div class="case-report-cards">
+            ${group.models.map((model) => `
+              <article class="case-report-card${model.champion ? " is-champion" : ""}${model.rejected ? " is-rejected" : ""}">
+                <div class="case-report-card-head">
+                  <div>
+                    <span>${model.family}</span>
+                    <strong>${model.name}</strong>
+                  </div>
+                  <b>${model.accuracy}</b>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Class</th>
+                      <th>Precision</th>
+                      <th>Recall</th>
+                      <th>F1</th>
+                      <th>Support</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${model.rows.map((row) => `
+                      <tr class="${row.class === "1" ? "is-promote" : ""}">
+                        <td>${row.class}</td>
+                        <td>${row.precision}</td>
+                        <td>${row.recall}</td>
+                        <td>${row.f1}</td>
+                        <td>${row.support}</td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+                <p>${model.note}</p>
+              </article>
+            `).join("")}
+          </div>
+        </section>
+      `).join("")}
     </div>
   `;
 }
@@ -232,11 +444,13 @@ function funnelMarkup(chart, theme) {
           const opacity = Math.max(0.18, 0.95 - index * 0.1);
           return `
             <div class="case-funnel-step">
-              <span>${item.label}</span>
-              <i style="width:${percent}%;background:rgba(${accentRgb},${opacity})" title="${item.label}: ${item.value.toLocaleString()}${chart.unit || ""}">
-                <strong>${item.value.toLocaleString()}${chart.unit || ""}</strong>
-              </i>
-              <b>${percent}%</b>
+              <span class="case-funnel-label">${item.label}</span>
+              <div class="case-funnel-track">
+                <i style="width:${percent}%;background:rgba(${accentRgb},${opacity})">
+                  <strong>${item.value.toLocaleString()}${chart.unit || ""}</strong>
+                </i>
+              </div>
+              <b class="case-funnel-pct">${percent}%</b>
             </div>
           `;
         })
@@ -245,16 +459,100 @@ function funnelMarkup(chart, theme) {
   `;
 }
 
+function processMarkup(chart) {
+  return `
+    <div class="case-chart case-process-flow">
+      ${chart.steps.map((step, i) => `
+        <div class="case-process-step${step.champion ? " is-champion" : ""}${step.rejected ? " is-rejected" : ""}">
+          <div class="case-process-head">
+            <strong>${step.title}</strong>
+            ${step.champion ? '<span class="case-process-badge">★</span>' : ""}
+            ${step.rejected ? '<span class="case-process-badge rejected">✗</span>' : ""}
+          </div>
+          <ul>
+            ${step.items.map(item => `<li>${item}</li>`).join("")}
+          </ul>
+          <span class="case-process-verdict">${step.verdict}</span>
+        </div>
+        ${i < chart.steps.length - 1 ? '<div class="case-process-arrow">→</div>' : ""}
+      `).join("")}
+    </div>
+  `;
+}
+
 function chartDatasetsFromGroups(chart, colors, extra = {}) {
-  return chart.series.map((series, sIdx) => ({
-    label: series,
+  return chart.series.map((series, sIdx) => {
+    const seriesLabel = typeof series === "object" ? series.label : series;
+    const seriesDim = typeof series === "object" && series._dim;
+    const baseColor = colors[sIdx % colors.length];
+    return {
+    label: seriesLabel,
     data: chart.groups.map((g) => g.values[sIdx]?.value ?? 0),
-    backgroundColor: colors[sIdx % colors.length],
-    borderColor: colors[sIdx % colors.length],
+    backgroundColor: chart.groups.map((g) => colorWithAlpha(baseColor, g._dim || seriesDim ? 0.2 : 0.9)),
+    borderColor: chart.groups.map((g) => colorWithAlpha(baseColor, g._dim || seriesDim ? 0.25 : 1)),
     borderRadius: 4,
     maxBarThickness: 28,
     ...extra
-  }));
+  };
+  });
+}
+
+function formatCount(value) {
+  return typeof value === "number" ? value.toLocaleString() : value;
+}
+
+function filteredMetrics(study, filterValue = "all") {
+  const dashboard = study.dashboard || {};
+  if (filterValue === "all") {
+    return study.metrics;
+  }
+
+  const filterLabel = selectedFilterLabel(study, filterValue);
+
+  if (study.id === "employee-promotion" && dashboard.departmentData?.[filterValue]) {
+    const data = dashboard.departmentData[filterValue];
+    return [
+      { label: "Records analyzed", value: formatCount(data.records), detail: `employee records in ${filterLabel}` },
+      { label: "Promoted", value: formatCount(data.promoted), detail: `employees promoted in ${filterLabel}` },
+      { label: "Best RF model", value: data.modelAccuracy || "N/A", detail: `model accuracy for ${filterLabel}` },
+      { label: "Promotion rate", value: `${data.promotionRate}%`, detail: `${filterLabel} promotion rate` }
+    ];
+  }
+
+  if (study.id === "delivery-performance") {
+    return study.metrics.map((item) => ({ ...item, detail: `${item.detail} (${filterLabel} view)` }));
+  }
+
+  if (study.id === "loyalty-retention" && dashboard.segmentMetrics?.[filterValue]) {
+    return dashboard.segmentMetrics[filterValue];
+  }
+
+  return study.metrics;
+}
+
+function filteredInsights(items = [], filterValue = "all") {
+  return items.filter((item) => !item.showFor || item.showFor.includes(filterValue));
+}
+
+function renderFilterBar(study, currentFilter = "all") {
+  const config = study.dashboard?.filterConfig;
+  if (!config) return "";
+  const options = Object.entries(config.options || {});
+  return `
+    <div class="case-filter-bar" aria-label="${config.label} filter">
+      <div class="case-filter-meta">
+        <span>${config.label}</span>
+        <strong>${selectedFilterLabel(study, currentFilter)}</strong>
+      </div>
+      <div class="case-filter-options">
+        ${options.map(([value, option]) => `
+          <button class="case-filter-btn${value === currentFilter ? " is-active" : ""}" type="button" data-filter-value="${value}">
+            ${option.label}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
 }
 
 function dashboardTemplate(study) {
@@ -274,7 +572,7 @@ function dashboardTemplate(study) {
         ${dashboardContextCard(study)}
       </section>
 
-      ${metricCards(study.metrics)}
+      <div id="caseMetricsMount"></div>
 
       <section class="case-workspace">
         <div class="case-workspace-heading">
@@ -284,6 +582,7 @@ function dashboardTemplate(study) {
           </div>
           <p>${dashboard.dashboardText}</p>
         </div>
+        <div id="caseFilterMount"></div>
         <div id="chartsMount"></div>
       </section>
 
@@ -293,9 +592,7 @@ function dashboardTemplate(study) {
           <h2>What The Dashboard Shows</h2>
           <p>${dashboard.analysisText}</p>
         </div>
-        <div class="case-insight-grid">
-          ${insightCards(dashboard.insights)}
-        </div>
+        <div class="case-insight-grid" id="caseInsightsMount"></div>
       </section>
 
       ${recommendationCards(dashboard.recommendations)}
@@ -318,26 +615,35 @@ function dashboardTemplate(study) {
   `;
 }
 
-function renderChartsJs(study) {
+let activeChartInstances = [];
+
+function destroyActiveCharts() {
+  activeChartInstances.forEach((chart) => chart.destroy());
+  activeChartInstances = [];
+}
+
+function renderChartsJs(study, filterValue = "all") {
   const mount = document.querySelector("#chartsMount");
   if (!mount) return;
 
-  mount.innerHTML = chartGrid(study);
+  destroyActiveCharts();
+  mount.innerHTML = chartGrid(study, filterValue);
 
   const theme = study.dashboard.theme || {};
   const colors = chartColors(theme);
-  const charts = study.dashboard.charts || [];
+  const charts = chartConfig(study, filterValue).configs;
 
   if (typeof Chart === "undefined") return;
 
-  let canvasIndex = 0;
-
   charts.forEach((chart) => {
-    if (chart.type === "heatmap" || chart.type === "table" || chart.type === "funnel") return;
+    if (chart._render === "static") return;
 
-    const canvas = document.querySelector(`#chart-canvas-${canvasIndex}`);
+    const palette = chart.colors || colors;
+
+    const chartTheme = chart.variant === "rd" ? { ...theme, text: "#f5f0e0", muted: "#cfe8d2", dark: "#174f2e" } : theme;
+
+    const canvas = document.querySelector(`#${chart._id}`);
     if (!canvas) {
-      canvasIndex++;
       return;
     }
 
@@ -348,7 +654,7 @@ function renderChartsJs(study) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: theme.dark || "#241812",
+          backgroundColor: chartTheme.dark || "#241812",
           titleColor: "#fff",
           bodyColor: "#eadfcd",
           padding: 10,
@@ -358,25 +664,26 @@ function renderChartsJs(study) {
       scales: {
         x: {
           grid: { color: "rgba(0,0,0,0.06)" },
-          ticks: { color: theme.muted || "#666" }
+          ticks: { color: chartTheme.muted || "#666" }
         },
         y: {
           beginAtZero: true,
           grid: { color: "rgba(0,0,0,0.06)" },
-          ticks: { color: theme.muted || "#666" }
+          ticks: { color: chartTheme.muted || "#666" }
         }
       }
     };
 
     if (chart.type === "bar" || chart.type === "horizontalBar") {
       const max = Math.max(...chart.values.map((v) => v.value));
-      new Chart(ctx, {
+      const instance = new Chart(ctx, {
         type: "bar",
         data: {
           labels: chart.values.map((v) => v.label),
           datasets: [{
             data: chart.values.map((v) => v.value),
-            backgroundColor: chart.values.map((_, i) => colors[i % colors.length]),
+            backgroundColor: chart.values.map((v, i) => colorWithAlpha(palette[i % palette.length], v._dim ? 0.2 : 0.9)),
+            borderColor: chart.values.map((v, i) => colorWithAlpha(palette[i % palette.length], v._dim ? 0.25 : 1)),
             borderRadius: 6,
             maxBarThickness: 48
           }]
@@ -399,20 +706,21 @@ function renderChartsJs(study) {
           }
         }
       });
+      activeChartInstances.push(instance);
     }
 
     if (chart.type === "groupedBar") {
       const max = Math.max(...chart.groups.flatMap((g) => g.values.map((v) => v.value)));
-      new Chart(ctx, {
+      const instance = new Chart(ctx, {
         type: "bar",
         data: {
           labels: chart.groups.map((g) => g.label),
-          datasets: chartDatasetsFromGroups(chart, colors)
+          datasets: chartDatasetsFromGroups(chart, palette)
         },
         options: {
           ...baseOpts,
           plugins: {
-            legend: { display: true, labels: { color: theme.text || "#222", boxWidth: 12, padding: 12 } },
+            legend: { display: true, labels: { color: chartTheme.text || "#222", boxWidth: 12, padding: 12 } },
             tooltip: {
               ...baseOpts.plugins.tooltip,
               callbacks: {
@@ -426,20 +734,21 @@ function renderChartsJs(study) {
           }
         }
       });
+      activeChartInstances.push(instance);
     }
 
     if (chart.type === "stackedBar") {
       const max = Math.max(...chart.groups.map((g) => g.values.reduce((sum, v) => sum + v.value, 0)));
-      new Chart(ctx, {
+      const instance = new Chart(ctx, {
         type: "bar",
         data: {
           labels: chart.groups.map((g) => g.label),
-          datasets: chartDatasetsFromGroups(chart, colors)
+          datasets: chartDatasetsFromGroups(chart, palette)
         },
         options: {
           ...baseOpts,
           plugins: {
-            legend: { display: true, labels: { color: theme.text || "#222", boxWidth: 12, padding: 12 } },
+            legend: { display: true, labels: { color: chartTheme.text || "#222", boxWidth: 12, padding: 12 } },
             tooltip: {
               ...baseOpts.plugins.tooltip,
               callbacks: {
@@ -453,22 +762,23 @@ function renderChartsJs(study) {
           }
         }
       });
+      activeChartInstances.push(instance);
     }
 
     if (chart.type === "line") {
       const values = chart.values.map((v) => v.value);
       const max = Math.max(...values);
-      new Chart(ctx, {
+      const instance = new Chart(ctx, {
         type: "line",
         data: {
           labels: chart.values.map((v) => v.label),
           datasets: [{
             data: values,
-            borderColor: colors[0],
-            backgroundColor: colors[0] + "18",
+            borderColor: palette[0],
+            backgroundColor: palette[0] + "18",
             fill: true,
             tension: 0.3,
-            pointBackgroundColor: colors[0],
+            pointBackgroundColor: palette[0],
             pointBorderColor: "#fff",
             pointBorderWidth: 1.5,
             pointRadius: 4,
@@ -493,6 +803,7 @@ function renderChartsJs(study) {
           elements: { point: { hoverRadius: 7 } }
         }
       });
+      activeChartInstances.push(instance);
     }
 
     if (chart.type === "combo") {
@@ -505,7 +816,7 @@ function renderChartsJs(study) {
       const primaryMax = Math.max(...primaryValues);
       const secondaryMax = secondaryValues.length ? Math.max(...secondaryValues) : 0;
       const hasSecondaryAxis = secondaryValues.length > 0;
-      new Chart(ctx, {
+      const instance = new Chart(ctx, {
         type: "bar",
         data: {
           labels: chart.labels,
@@ -516,8 +827,8 @@ function renderChartsJs(study) {
               label: dataset.label,
               data: dataset.values,
               yAxisID: dataset.axis || (isLine ? "y1" : "y"),
-              backgroundColor: isLine ? colorWithAlpha(colors[dIdx % colors.length], 0.18) : colors[dIdx % colors.length],
-              borderColor: colors[dIdx % colors.length],
+              backgroundColor: isLine ? colorWithAlpha(palette[dIdx % palette.length], 0.18) : palette[dIdx % palette.length],
+              borderColor: palette[dIdx % palette.length],
               borderRadius: isLine ? 0 : 4,
               borderWidth: isLine ? 2.5 : 1,
               fill: isLine ? false : undefined,
@@ -532,7 +843,7 @@ function renderChartsJs(study) {
           ...baseOpts,
           interaction: { mode: "index", intersect: false },
           plugins: {
-            legend: { display: true, labels: { color: theme.text || "#222", boxWidth: 12, padding: 12 } },
+            legend: { display: true, labels: { color: chartTheme.text || "#222", boxWidth: 12, padding: 12 } },
             tooltip: {
               ...baseOpts.plugins.tooltip,
               callbacks: {
@@ -550,24 +861,25 @@ function renderChartsJs(study) {
                     beginAtZero: false,
                     suggestedMax: Math.ceil(secondaryMax * 1.12),
                     grid: { drawOnChartArea: false },
-                    ticks: { color: theme.muted || "#666" }
+                    ticks: { color: chartTheme.muted || "#666" }
                   }
                 }
               : {})
           }
         }
       });
+      activeChartInstances.push(instance);
     }
 
     if (chart.type === "pie" || chart.type === "doughnut" || chart.type === "polarArea") {
-      new Chart(ctx, {
+      const instance = new Chart(ctx, {
         type: chart.type,
         data: {
           labels: chart.values.map((v) => v.label),
           datasets: [{
             data: chart.values.map((v) => v.value),
-            backgroundColor: chart.values.map((_, i) => colorWithAlpha(colors[i % colors.length], chart.type === "polarArea" ? 0.72 : 0.9)),
-            borderColor: theme.panel || "#fff",
+            backgroundColor: chart.values.map((v, i) => colorWithAlpha(palette[i % palette.length], v._dim ? 0.2 : chart.type === "polarArea" ? 0.72 : 0.9)),
+            borderColor: chartTheme.panel || "#fff",
             borderWidth: 2
           }]
         },
@@ -575,7 +887,7 @@ function renderChartsJs(study) {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: true, position: "bottom", labels: { color: theme.text || "#222", boxWidth: 12, padding: 12 } },
+            legend: { display: true, position: "bottom", labels: { color: chartTheme.text || "#222", boxWidth: 12, padding: 12 } },
             tooltip: {
               ...baseOpts.plugins.tooltip,
               callbacks: {
@@ -585,19 +897,20 @@ function renderChartsJs(study) {
           }
         }
       });
+      activeChartInstances.push(instance);
     }
 
     if (chart.type === "radar") {
-      new Chart(ctx, {
+      const instance = new Chart(ctx, {
         type: "radar",
         data: {
           labels: chart.labels,
           datasets: chart.datasets.map((dataset, dIdx) => ({
             label: dataset.label,
             data: dataset.values,
-            borderColor: colors[dIdx % colors.length],
-            backgroundColor: colorWithAlpha(colors[dIdx % colors.length], 0.16),
-            pointBackgroundColor: colors[dIdx % colors.length],
+            borderColor: palette[dIdx % palette.length],
+            backgroundColor: colorWithAlpha(palette[dIdx % palette.length], 0.16),
+            pointBackgroundColor: palette[dIdx % palette.length],
             pointBorderColor: "#fff",
             borderWidth: 2
           }))
@@ -606,7 +919,7 @@ function renderChartsJs(study) {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: true, position: "bottom", labels: { color: theme.text || "#222", boxWidth: 12, padding: 12 } },
+            legend: { display: true, position: "bottom", labels: { color: chartTheme.text || "#222", boxWidth: 12, padding: 12 } },
             tooltip: baseOpts.plugins.tooltip
           },
           scales: {
@@ -615,17 +928,18 @@ function renderChartsJs(study) {
               suggestedMax: 100,
               grid: { color: "rgba(0,0,0,0.08)" },
               angleLines: { color: "rgba(0,0,0,0.08)" },
-              pointLabels: { color: theme.text || "#222", font: { size: 11, weight: "700" } },
+              pointLabels: { color: chartTheme.text || "#222", font: { size: 11, weight: "700" } },
               ticks: { display: false }
             }
           }
         }
       });
+      activeChartInstances.push(instance);
     }
 
     if (chart.type === "scatter" || chart.type === "bubble") {
       const series = chart.series || [{ label: chart.title, points: chart.points }];
-      new Chart(ctx, {
+      const instance = new Chart(ctx, {
         type: chart.type === "bubble" ? "bubble" : "scatter",
         data: {
           datasets: series.map((dataset, dIdx) => ({
@@ -636,8 +950,8 @@ function renderChartsJs(study) {
               r: point.r || 6,
               label: point.label
             })),
-            backgroundColor: colorWithAlpha(colors[dIdx % colors.length], 0.72),
-            borderColor: colors[dIdx % colors.length],
+            backgroundColor: colorWithAlpha(palette[dIdx % palette.length], 0.72),
+            borderColor: palette[dIdx % palette.length],
             pointRadius: chart.type === "scatter" ? 5 : undefined,
             pointHoverRadius: chart.type === "scatter" ? 8 : undefined
           }))
@@ -645,7 +959,7 @@ function renderChartsJs(study) {
         options: {
           ...baseOpts,
           plugins: {
-            legend: { display: series.length > 1, labels: { color: theme.text || "#222", boxWidth: 12, padding: 12 } },
+            legend: { display: series.length > 1, labels: { color: chartTheme.text || "#222", boxWidth: 12, padding: 12 } },
             tooltip: {
               ...baseOpts.plugins.tooltip,
               callbacks: {
@@ -658,15 +972,39 @@ function renderChartsJs(study) {
             }
           },
           scales: {
-            x: { ...baseOpts.scales.x, title: { display: true, text: chart.xLabel || "", color: theme.muted || "#666" } },
-            y: { ...baseOpts.scales.y, title: { display: true, text: chart.yLabel || "", color: theme.muted || "#666" } }
+            x: { ...baseOpts.scales.x, title: { display: true, text: chart.xLabel || "", color: chartTheme.muted || "#666" } },
+            y: { ...baseOpts.scales.y, title: { display: true, text: chart.yLabel || "", color: chartTheme.muted || "#666" } }
           }
         }
       });
+      activeChartInstances.push(instance);
     }
-
-    canvasIndex++;
   });
+}
+
+function renderDashboard(study, filterValue = "all") {
+  const validFilters = filterOptionIds(study);
+  const currentFilter = validFilters.includes(filterValue) ? filterValue : study.dashboard?.filterConfig?.default || "all";
+
+  const metricsMount = document.querySelector("#caseMetricsMount");
+  if (metricsMount) {
+    metricsMount.innerHTML = metricCards(filteredMetrics(study, currentFilter));
+  }
+
+  const filterMount = document.querySelector("#caseFilterMount");
+  if (filterMount) {
+    filterMount.innerHTML = renderFilterBar(study, currentFilter);
+    filterMount.querySelectorAll(".case-filter-btn").forEach((button) => {
+      button.addEventListener("click", () => renderDashboard(study, button.dataset.filterValue));
+    });
+  }
+
+  renderChartsJs(study, currentFilter);
+
+  const insightsMount = document.querySelector("#caseInsightsMount");
+  if (insightsMount) {
+    insightsMount.innerHTML = insightCards(filteredInsights(study.dashboard?.insights, currentFilter));
+  }
 }
 
 function renderProjectDetail() {
@@ -684,7 +1022,7 @@ function renderProjectDetail() {
   mount.innerHTML = dashboardTemplate(study);
 
   if (study.dashboard && study.dashboard.charts) {
-    renderChartsJs(study);
+    renderDashboard(study, study.dashboard.filterConfig?.default || "all");
   }
 }
 

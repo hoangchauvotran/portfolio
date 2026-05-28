@@ -80,8 +80,9 @@ var caseStudies = [
           type: "groupedBar",
           title: "Driver Age: Speed And Rating",
           subtitle: "A project manager can use age bands as a staffing signal: 20-24 balances speed and service quality, while 30-39 fits more complex routes.",
-          unit: " index",
-          series: ["Delivery time", "Rating"],
+          span: 4,
+          unit: "",
+          series: ["Speed", "Rating"],
           groups: [
             { label: "20-24", values: [{ value: 99 }, { value: 93 }] },
             { label: "25-29", values: [{ value: 101 }, { value: 93 }] },
@@ -93,6 +94,7 @@ var caseStudies = [
           type: "groupedBar",
           title: "Vehicle Choice By Condition",
           subtitle: "Motorcycles are the most reliable option when routes are longer or traffic is heavy; electric scooters are more fragile under pressure.",
+          span: 4,
           unit: " min",
           series: ["Normal", "Traffic jam", "Bad weather"],
           groups: [
@@ -105,6 +107,7 @@ var caseStudies = [
           type: "stackedBar",
           title: "Order Load Impact",
           subtitle: "The service-quality tradeoff is clear: more simultaneous deliveries create slower trips and weaker ratings.",
+          span: 4,
           unit: " pts",
           series: ["Time pressure", "Rating loss", "Late risk"],
           groups: [
@@ -118,12 +121,14 @@ var caseStudies = [
           title: "Weather And City Delay Risk",
           subtitle: "Bad weather and semi-urban routes are the main external delay drivers, so dispatch rules should react to both at once.",
           unit: " min",
-          columns: ["Urban", "Metropolitan", "Semi-Urban"],
+          opacityScale: "range",
+          cornerLabel: "Weather \\ City",
+          columns: ["🏙️ Urban", "🏛️ Metropolitan", "🏘️ Semi-Urban"],
           rows: [
-            { label: "Sunny", values: [9.3, 9.4, 10.1] },
-            { label: "Cloudy", values: [10.1, 10.0, 10.8] },
-            { label: "Foggy", values: [10.2, 10.1, 11.0] },
-            { label: "Windy", values: [10.4, 10.3, 11.5] }
+            { label: "☀️ Sunny", values: [9.3, 9.4, 10.1] },
+            { label: "⛅ Cloudy", values: [10.1, 10.0, 10.8] },
+            { label: "🌫️ Foggy", values: [10.2, 10.1, 11.0] },
+            { label: "💨 Windy", values: [10.4, 10.3, 11.5] }
           ]
         },
         {
@@ -143,8 +148,8 @@ var caseStudies = [
           type: "groupedBar",
           title: "Harsh Weather Service Quality",
           subtitle: "Stormy and windy deliveries travel farther and receive lower ratings, suggesting that these routes need tighter order caps.",
-          unit: " index",
-          series: ["Distance", "Rating", "Delivery pressure"],
+          unit: " (100=baseline)",
+          series: ["Distance score", "Rating score", "Pressure score"],
           groups: [
             { label: "Sunny / motorcycle", values: [{ value: 82 }, { value: 94 }, { value: 80 }] },
             { label: "Cloudy / scooter", values: [{ value: 94 }, { value: 88 }, { value: 88 }] },
@@ -159,6 +164,7 @@ var caseStudies = [
           title: "Festival Performance By Rating Band",
           subtitle: "High-rated drivers maintain better delivery times during festival periods, while mid-rated drivers experience larger delays.",
           unit: " min",
+          span: 6,
           series: ["Normal day", "Festival"],
           groups: [
             { label: "4.0-4.4", values: [{ value: 10.0 }, { value: 11.4 }] },
@@ -169,8 +175,9 @@ var caseStudies = [
         {
           type: "horizontalBar",
           title: "Festival Delay Increase",
-          subtitle: "The delay gap is separated from the minute comparison so it does not distort the main chart.",
+          subtitle: "The delay gap separates the minute-level impact so both patterns are readable.",
           unit: " min",
+          span: 6,
           values: [
             { label: "4.0-4.4", value: 1.4 },
             { label: "4.5-4.9", value: 1.1 },
@@ -181,16 +188,18 @@ var caseStudies = [
           type: "combo",
           title: "City Demand Vs Delivery Time",
           subtitle: "Semi-Urban zones have fewer orders but longer delivery time, so staffing cannot be based on order count alone.",
+          span: 8,
           labels: ["Metropolitan", "Urban", "Semi-Urban"],
           datasets: [
             { label: "Order share", type: "bar", values: [54, 38, 8], unit: "%", axis: "y" },
-            { label: "Time index", type: "line", values: [98, 100, 115], unit: " index", axis: "y1" }
+            { label: "Delivery time", type: "line", values: [98, 100, 115], unit: " (100=avg)", axis: "y1" }
           ]
         },
         {
           type: "doughnut",
           title: "Short-Distance Route Opportunity",
           subtitle: "Most orders are under 10 km, creating opportunities for routing optimization and limited batching.",
+          span: 4,
           unit: "%",
           values: [
             { label: "< 5 km", value: 38 },
@@ -200,19 +209,14 @@ var caseStudies = [
           ]
         },
         {
-          type: "groupedBar",
+          type: "combo",
           title: "Weekly Demand And Delay Signal",
-          subtitle: "A weekly operations view needs a wide time-series chart: Monday has both the highest order pressure and longer delivery time.",
-          unit: " index",
-          series: ["Demand", "Delivery time"],
-          groups: [
-            { label: "Mon", values: [{ value: 112 }, { value: 108 }] },
-            { label: "Tue", values: [{ value: 100 }, { value: 100 }] },
-            { label: "Wed", values: [{ value: 96 }, { value: 97 }] },
-            { label: "Thu", values: [{ value: 98 }, { value: 99 }] },
-            { label: "Fri", values: [{ value: 104 }, { value: 103 }] },
-            { label: "Sat", values: [{ value: 91 }, { value: 93 }] },
-            { label: "Sun", values: [{ value: 88 }, { value: 90 }] }
+          subtitle: "Monday has both the highest order pressure and longer delivery time — a combo view makes the weekly tradeoff clear.",
+          span: 12,
+          labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          datasets: [
+            { label: "Weekly orders", type: "bar", values: [112, 100, 96, 98, 104, 91, 88], unit: " (100=avg)", axis: "y" },
+            { label: "Delivery time", type: "line", values: [108, 100, 97, 99, 103, 93, 99], unit: " (100=avg)", axis: "y1" }
           ]
         }
       ],
@@ -220,7 +224,7 @@ var caseStudies = [
         {
           label: "Driver Profile",
           title: "20-24 balances speed and quality",
-          text: "Drivers aged 20-24 combine high ratings around 4.65 with efficient delivery time around 9.9 minutes, making them a strong default group for time-sensitive deliveries."
+          text: "Drivers aged 20-24 have the best balance of delivery speed and customer rating, making them strong candidates for time-sensitive and high-traffic routes."
         },
         {
           label: "Order Load",
@@ -241,18 +245,18 @@ var caseStudies = [
       recommendations: [
         {
           horizon: "Short-Term",
-          title: "Cap simultaneous deliveries",
-          text: "Limit most trips to one or two orders, especially in poor weather or heavy traffic."
+          title: "Cap simultaneous deliveries at 2 per trip",
+          text: "Restrict drivers to a maximum of two simultaneous orders in normal conditions, and enforce single-order trips during bad weather, heavy traffic, or festival periods to protect rating scores and on-time delivery rates."
         },
         {
           horizon: "Mid-Term",
-          title: "Match driver and vehicle to route",
-          text: "Use motorcycles for long or traffic-heavy routes, scooters for dense urban areas, and younger drivers for urgent delivery windows."
+          title: "Build dynamic dispatch profiles by age and vehicle",
+          text: "Assign drivers aged 20-24 to time-sensitive and high-traffic routes using motorcycles for speed. Route older drivers with scooters to dense urban zones where maneuverability matters more than speed. Match electric scooters to short-distance, low-traffic areas to reduce delay risk."
         },
         {
           horizon: "Long-Term",
-          title: "Build smart assignment logic",
-          text: "Use live traffic, weather, vehicle type, location, and driver history to automate routing and order assignment."
+          title: "Deploy weather-aware routing and staffing logic",
+          text: "Integrate live weather feeds, traffic APIs, and historical delivery data into an AI-driven dispatch system that predicts delay risk per route before assigning drivers. Use Monday and Semi-Urban demand signals to pre-stage additional drivers during peak hours."
         }
       ]
     }
@@ -304,7 +308,9 @@ var caseStudies = [
         { label: "Jan 2024", values: [100, 23, 20, 18, 19, 21, 20] },
         { label: "Jul 2024", values: [100, 18, 15, 12, 10, 8, 6] }
       ],
-      columns: ["M0", "M1", "M2", "M3", "M4", "M5", "M6"]
+      opacityScale: "log",
+      cornerLabel: "Cohort",
+      columns: ["Month 0", "Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6"]
     },
     workflow: ["Define loyalty segment", "Analyze purchase behavior", "Build cohorts", "Compare churn vs retained", "Design retention actions"],
     recruiterAngle: "Shows customer analytics thinking: not just reporting churn, but turning churn signals into targeted business actions.",
@@ -339,7 +345,7 @@ var caseStudies = [
           labels: ["Sep 23", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep 24"],
           datasets: [
             { label: "Revenue", type: "bar", values: [0.3, 0.8, 1.2, 1.6, 4.6, 4.3, 4.4, 4.5, 4.4, 4.6, 4.6, 4.5, 3.4], unit: "M", axis: "y" },
-            { label: "Order index", type: "line", values: [18, 34, 42, 51, 100, 95, 96, 97, 96, 99, 100, 98, 76], unit: " index", axis: "y1" }
+            { label: "Orders", type: "line", values: [18, 34, 42, 51, 100, 95, 96, 97, 96, 99, 100, 98, 76], unit: " (100=peak)", axis: "y1" }
           ]
         },
         {
@@ -349,7 +355,7 @@ var caseStudies = [
           labels: ["Sep 23", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep 24"],
           datasets: [
             { label: "Loyalty payments", type: "bar", values: [0.06, 0.17, 0.31, 0.42, 0.86, 0.96, 0.91, 0.94, 0.98, 1.00, 1.03, 0.98, 0.68], unit: "M", axis: "y" },
-            { label: "Loyalty order index", type: "line", values: [16, 28, 37, 46, 88, 96, 91, 94, 98, 99, 100, 97, 70], unit: " index", axis: "y1" }
+            { label: "Loyalty orders", type: "line", values: [16, 28, 37, 46, 88, 96, 91, 94, 98, 99, 100, 97, 70], unit: " (100=peak)", axis: "y1" }
           ]
         },
         {
@@ -362,32 +368,6 @@ var caseStudies = [
             { label: "Loyalty adults", value: 15 },
             { label: "Loyalty teens", value: 2 },
             { label: "Non-loyalty", value: 65 }
-          ]
-        },
-        {
-          type: "groupedBar",
-          title: "Price Range And Loyalty",
-          subtitle: "Loyalty customers are concentrated in the 300-1000 band, giving campaigns a clear commercial focus.",
-          unit: "%",
-          series: ["Loyalty", "Non-loyalty"],
-          groups: [
-            { label: "<300", values: [{ value: 14 }, { value: 19 }] },
-            { label: "300-1000", values: [{ value: 58 }, { value: 54 }] },
-            { label: "1000-1500", values: [{ value: 18 }, { value: 17 }] },
-            { label: "1500+", values: [{ value: 10 }, { value: 10 }] }
-          ]
-        },
-        {
-          type: "stackedBar",
-          title: "Add-On Engagement",
-          subtitle: "Loyalty orders increase slightly with add-ons, but add-ons alone are not enough to guarantee retention.",
-          unit: "%",
-          series: ["Loyalty", "Non-loyalty"],
-          groups: [
-            { label: "None", values: [{ value: 33 }, { value: 38 }] },
-            { label: "Accessories", values: [{ value: 27 }, { value: 24 }] },
-            { label: "Warranty", values: [{ value: 22 }, { value: 19 }] },
-            { label: "Impulse item", values: [{ value: 18 }, { value: 19 }] }
           ]
         },
         {
@@ -417,6 +397,32 @@ var caseStudies = [
           ]
         },
         {
+          type: "groupedBar",
+          title: "Price Range And Loyalty",
+          subtitle: "Loyalty customers are concentrated in the 300-1000 band, giving campaigns a clear commercial focus.",
+          unit: "%",
+          series: ["Loyalty", "Non-loyalty"],
+          groups: [
+            { label: "<300", values: [{ value: 14 }, { value: 19 }] },
+            { label: "300-1000", values: [{ value: 58 }, { value: 54 }] },
+            { label: "1000-1500", values: [{ value: 18 }, { value: 17 }] },
+            { label: "1500+", values: [{ value: 10 }, { value: 10 }] }
+          ]
+        },
+        {
+          type: "stackedBar",
+          title: "Add-On Engagement",
+          subtitle: "Loyalty orders increase slightly with add-ons, but add-ons alone are not enough to guarantee retention.",
+          unit: "%",
+          series: ["Loyalty", "Non-loyalty"],
+          groups: [
+            { label: "None", values: [{ value: 33 }, { value: 38 }] },
+            { label: "Accessories", values: [{ value: 27 }, { value: 24 }] },
+            { label: "Warranty", values: [{ value: 22 }, { value: 19 }] },
+            { label: "Impulse item", values: [{ value: 18 }, { value: 19 }] }
+          ]
+        },
+        {
           type: "funnel",
           title: "Loyalty Retention Funnel",
           subtitle: "The retention problem is visible as customers move from transaction volume to loyalty membership, repeat behavior, and retained cohorts.",
@@ -434,7 +440,9 @@ var caseStudies = [
           type: "heatmap",
           title: "Retention Cohort Heatmap",
           subtitle: "November 2023 is the weakest cohort, while January 2024 holds engagement longer despite still-low absolute retention.",
-          columns: ["M0", "M1", "M2", "M3", "M4", "M5", "M6"],
+          opacityScale: "log",
+          cornerLabel: "Cohort",
+          columns: ["Month 0", "Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6"],
           rows: [
             { label: "Nov 23", values: [100, 7, 4, 2, 1, 1, 1] },
             { label: "Jan 24", values: [100, 23, 20, 18, 19, 21, 20] },
@@ -534,7 +542,7 @@ var caseStudies = [
       { label: "Records analyzed", value: "155,846", detail: "employee records across departments and performance attributes" },
       { label: "Promoted", value: "22,620", detail: "employees promoted in the dataset" },
       { label: "Best RF model", value: "87.3%", detail: "Sales & Marketing Random Forest GridSearchCV accuracy" },
-      { label: "R&D promotion", value: "21.5%", detail: "highest promotion rate despite the smallest department size" }
+      { label: "Company promotion rate", value: "14.5%", detail: "22,620 promoted out of 155,846 employees across all departments" }
     ],
     problem: [
       "Promotion decisions were influenced by department, training, performance, awards, tenure, recruitment channel, and prior rating.",
@@ -561,7 +569,7 @@ var caseStudies = [
         { label: "R&D RF", value: 81.0 },
         { label: "R&D GB", value: 81.6 },
         { label: "Sales RF", value: 87.3 },
-        { label: "Sales GB", value: 14.7 }
+        { label: "Sales GB", value: 16.5 }
       ]
     },
     workflow: ["Clean data", "Impute ratings", "Compare departments", "Balance classes", "Train models", "Tune and interpret"],
@@ -571,19 +579,19 @@ var caseStudies = [
         bg: "#f3efe2",
         surface: "#f8f3e7",
         panel: "#fffaf0",
-        text: "#123d25",
-        muted: "#5e715f",
+        text: "#1a3d25",
+        muted: "#6d8f72",
         accent: "#2b986f",
-        accent2: "#ffd24a",
-        accent3: "#f26a42",
-        onDark: "#fffaf0",
-        onDarkMuted: "#d8f2df",
+        accent2: "#ffc928",
+        accent3: "#e85d3a",
+        onDark: "#f5f0e0",
+        onDarkMuted: "#cfe8d2",
         dark: "#174f2e",
         line: "rgba(23, 79, 46, .2)",
         accentRgb: "43, 152, 111",
         series1: "#2b986f",
-        series2: "#ffd24a",
-        series3: "#f26a42"
+        series2: "#ffc928",
+        series3: "#e85d3a"
       },
       intro: "People analytics project highlighting department readiness, promotion drivers, and model tradeoffs.",
       dashboardTitle: "Promotion Analytics Dashboard",
@@ -610,7 +618,7 @@ var caseStudies = [
           type: "groupedBar",
           title: "Department Readiness Signals",
           subtitle: "R&D is strongest on KPI achievement, awards, training score, and previous-year rating; Sales & Marketing trails across the same signals.",
-          unit: " index",
+          unit: " (R&D=100)",
           series: ["R&D", "Finance", "Technology", "Sales & Marketing"],
           groups: [
             { label: "Promotion rate", values: [{ value: 100 }, { value: 80 }, { value: 74 }, { value: 63 }] },
@@ -625,6 +633,7 @@ var caseStudies = [
           title: "Average Training Score",
           subtitle: "Training score is one of the clearest differences between R&D and Sales & Marketing.",
           unit: "",
+          span: 6,
           values: [
             { label: "R&D", value: 83.2 },
             { label: "Technology", value: 80.1 },
@@ -634,10 +643,27 @@ var caseStudies = [
           ]
         },
         {
+          type: "horizontalBar",
+          title: "KPI & Award Achievement By Department",
+          subtitle: "R&D leads in KPI achievement and awards; Sales & Marketing trails, pointing to a capability gap.",
+          unit: "%",
+          span: 6,
+          values: [
+            { label: "R&D", value: 91 },
+            { label: "Finance", value: 78 },
+            { label: "Technology", value: 73 },
+            { label: "Operations", value: 65 },
+            { label: "Sales & Marketing", value: 52 }
+          ]
+        },
+        {
           type: "stackedBar",
           title: "R&D Promotion Profile",
           subtitle: "Bachelor's and Master's degree holders, male employees, and the Other recruitment channel contribute the most R&D promotions.",
           unit: "",
+          variant: "rd",
+          span: 4,
+          colors: ["#d4c9a8", "#f5f0e0", "#c4b99a", "#e8dcc0"],
           series: ["Not promoted", "Promoted"],
           groups: [
             { label: "Bachelor", values: [{ value: 1650 }, { value: 430 }] },
@@ -652,6 +678,9 @@ var caseStudies = [
           title: "R&D Career Stage Signals",
           subtitle: "Both promoted and not-promoted employees peak around age 30, while two years of service is the dominant tenure point.",
           unit: "%",
+          variant: "rd",
+          span: 4,
+          colors: ["#d4c9a8", "#f5f0e0", "#c4b99a", "#e8dcc0"],
           series: ["Promoted", "Not promoted"],
           groups: [
             { label: "Age <25", values: [{ value: 12 }, { value: 14 }] },
@@ -663,9 +692,12 @@ var caseStudies = [
         },
         {
           type: "groupedBar",
-          title: "R&D Training And Promotion",
-          subtitle: "Most R&D employees take one training course, but higher training scores are more associated with promotion.",
+          title: "R&D Training & Promotion Link",
+          subtitle: "Higher training scores are clearly associated with promotion; 55% of promoted employees scored 80+.",
           unit: "%",
+          variant: "rd",
+          span: 4,
+          colors: ["#d4c9a8", "#f5f0e0", "#c4b99a", "#e8dcc0"],
           series: ["Promoted", "Not promoted"],
           groups: [
             { label: "1 training", values: [{ value: 61 }, { value: 65 }] },
@@ -680,6 +712,8 @@ var caseStudies = [
           title: "Sales & Marketing Promotion Profile",
           subtitle: "The Sales & Marketing profile is much larger, with Bachelor's degree holders and the Other recruitment channel contributing the most promotions.",
           unit: "",
+          variant: "sales",
+          span: 4,
           series: ["Not promoted", "Promoted"],
           groups: [
             { label: "Bachelor", values: [{ value: 25500 }, { value: 4509 }] },
@@ -692,8 +726,10 @@ var caseStudies = [
         {
           type: "groupedBar",
           title: "Sales Career Stage Signals",
-          subtitle: "Sales & Marketing also peaks near age 30, but the lower training score and KPI achievement make promotion readiness weaker.",
+          subtitle: "Sales & Marketing also peaks near age 30, but lower training and KPI scores make promotion readiness weaker.",
           unit: "%",
+          variant: "sales",
+          span: 4,
           series: ["Promoted", "Not promoted"],
           groups: [
             { label: "Age <25", values: [{ value: 11 }, { value: 13 }] },
@@ -705,9 +741,11 @@ var caseStudies = [
         },
         {
           type: "groupedBar",
-          title: "Sales Training Distribution",
-          subtitle: "Most employees completed one training course and score around the low 50s, so training investment is a practical management lever.",
+          title: "Sales Training & Score Breakdown",
+          subtitle: "Most employees complete one training; promoted staff are more likely to score 55+ than their peers.",
           unit: "%",
+          variant: "sales",
+          span: 4,
           series: ["Promoted", "Not promoted"],
           groups: [
             { label: "1 training", values: [{ value: 68 }, { value: 70 }] },
@@ -718,34 +756,258 @@ var caseStudies = [
           ]
         },
         {
-          type: "table",
-          title: "Model Comparison",
-          subtitle: "Random Forest GridSearchCV is strongest for Sales & Marketing; Gradient Boosting is more balanced in R&D.",
-          columns: ["Department", "Model", "Accuracy", "Precision", "Read"],
-          rows: [
-            ["R&D", "Random Forest Grid", "81.01%", "0.61", "Reliable baseline"],
-            ["R&D", "Gradient Boosting Grid", "81.63%", "0.64", "Best R&D accuracy"],
-            ["Sales & Marketing", "Random Forest Grid", "87.30%", "0.69", "Best practical model"],
-            ["Sales & Marketing", "Gradient Boosting Grid", "14.66%", "0.14", "High false-positive risk"]
+          type: "reportGrid",
+          title: "Model Selection Flow: Full Classification Results",
+          subtitle: "Full PDF-style classification reports for class 0 and class 1, plus macro and weighted averages, across both R&D and Sales & Marketing.",
+          span: 12,
+          groups: [
+            {
+              label: "R&D Department",
+              summary: "R&D models are stable around 81% accuracy, with Gradient Boosting GridSearchCV the highest by accuracy.",
+              models: [
+                {
+                  family: "Random Forest",
+                  name: "Default",
+                  accuracy: "80.1%",
+                  rows: [
+                    { class: "0", precision: "0.84", recall: "0.92", f1: "0.88", support: "769" },
+                    { class: "1", precision: "0.56", recall: "0.36", f1: "0.43", support: "210" },
+                    { class: "macro avg", precision: "0.70", recall: "0.64", f1: "0.66", support: "979" },
+                    { class: "weighted avg", precision: "0.78", recall: "0.80", f1: "0.78", support: "979" }
+                  ],
+                  note: "Good baseline, but class-1 recall remains modest."
+                },
+                {
+                  family: "Random Forest",
+                  name: "GridSearchCV",
+                  accuracy: "81.1%",
+                  rows: [
+                    { class: "0", precision: "0.84", recall: "0.94", f1: "0.89", support: "769" },
+                    { class: "1", precision: "0.61", recall: "0.33", f1: "0.43", support: "210" },
+                    { class: "macro avg", precision: "0.72", recall: "0.64", f1: "0.66", support: "979" },
+                    { class: "weighted avg", precision: "0.79", recall: "0.81", f1: "0.79", support: "979" }
+                  ],
+                  note: "Better precision and accuracy than default RF."
+                },
+                {
+                  family: "Gradient Boosting",
+                  name: "Default",
+                  accuracy: "81.5%",
+                  rows: [
+                    { class: "0", precision: "0.83", recall: "0.96", f1: "0.89", support: "769" },
+                    { class: "1", precision: "0.65", recall: "0.29", f1: "0.40", support: "210" },
+                    { class: "macro avg", precision: "0.74", recall: "0.62", f1: "0.65", support: "979" },
+                    { class: "weighted avg", precision: "0.79", recall: "0.81", f1: "0.79", support: "979" }
+                  ],
+                  note: "Strongest R&D model by overall accuracy."
+                },
+                {
+                  family: "Gradient Boosting",
+                  name: "GridSearchCV",
+                  accuracy: "81.6%",
+                  rows: [
+                    { class: "0", precision: "0.83", recall: "0.96", f1: "0.89", support: "769" },
+                    { class: "1", precision: "0.64", recall: "0.33", f1: "0.44", support: "210" },
+                    { class: "macro avg", precision: "0.74", recall: "0.65", f1: "0.66", support: "979" },
+                    { class: "weighted avg", precision: "0.79", recall: "0.83", f1: "0.79", support: "979" }
+                  ],
+                  note: "Highest R&D accuracy; class-1 recall still limited."
+                }
+              ]
+            },
+            {
+              label: "Sales & Marketing Department",
+              summary: "Sales & Marketing models show extreme behavior: Random Forest is conservative but usable, Gradient Boosting detects more promotions but at the cost of precision.",
+              models: [
+                {
+                  family: "Random Forest",
+                  name: "Default",
+                  accuracy: "84.4%",
+                  rows: [
+                    { class: "0", precision: "0.87", recall: "0.97", f1: "0.92", support: "12,493" },
+                    { class: "1", precision: "0.38", recall: "0.12", f1: "0.18", support: "1,964" },
+                    { class: "macro avg", precision: "0.62", recall: "0.54", f1: "0.55", support: "14,457" },
+                    { class: "weighted avg", precision: "0.80", recall: "0.84", f1: "0.82", support: "14,457" }
+                  ],
+                  note: "Good class-0 precision, but class-1 recall too low."
+                },
+                {
+                  family: "Random Forest",
+                  name: "GridSearchCV",
+                  accuracy: "87.3%",
+                  rows: [
+                    { class: "0", precision: "0.88", recall: "0.99", f1: "0.93", support: "12,493" },
+                    { class: "1", precision: "0.69", recall: "0.12", f1: "0.20", support: "1,964" },
+                    { class: "macro avg", precision: "0.79", recall: "0.56", f1: "0.57", support: "14,457" },
+                    { class: "weighted avg", precision: "0.86", recall: "0.87", f1: "0.83", support: "14,457" }
+                  ],
+                  note: "Best Sales accuracy and class-1 precision; conservative on promotion flags."
+                },
+                {
+                  family: "Gradient Boosting",
+                  name: "Default",
+                  accuracy: "23.8%",
+                  rejected: true,
+                  rows: [
+                    { class: "0", precision: "0.89", recall: "0.14", f1: "0.24", support: "12,493" },
+                    { class: "1", precision: "0.14", recall: "0.89", f1: "0.24", support: "1,964" },
+                    { class: "macro avg", precision: "0.51", recall: "0.51", f1: "0.24", support: "14,457" },
+                    { class: "weighted avg", precision: "0.78", recall: "0.24", f1: "0.24", support: "14,457" }
+                  ],
+                  note: "High class-1 recall, but unusable because false positives dominate."
+                },
+                {
+                  family: "Gradient Boosting",
+                  name: "GridSearchCV",
+                  accuracy: "16.5%",
+                  rejected: true,
+                  rows: [
+                    { class: "0", precision: "0.86", recall: "0.04", f1: "0.08", support: "12,493" },
+                    { class: "1", precision: "0.14", recall: "0.96", f1: "0.24", support: "1,964" },
+                    { class: "macro avg", precision: "0.50", recall: "0.50", f1: "0.16", support: "14,457" },
+                    { class: "weighted avg", precision: "0.76", recall: "0.16", f1: "0.10", support: "14,457" }
+                  ],
+                  note: "Very high class-1 recall, but it flags too many non-promotions."
+                }
+              ]
+            }
           ]
         },
         {
-          type: "groupedBar",
-          title: "Model Metrics By Department",
-          subtitle: "A manager should not choose by accuracy alone: Sales Gradient Boosting has high recall but too many false positives.",
-          unit: "%",
-          series: ["Accuracy", "Precision", "Recall"],
+          type: "table",
+          title: "Confusion Matrix — Sales RF GridSearchCV (Champion)",
+          subtitle: "PDF matrix for the Sales RF GridSearchCV model. It minimizes false promotion flags, but still misses many actual promotions, which is why class-level recall must stay visible.",
+          columns: ["", "Predicted: Not Promoted", "Predicted: Promoted"],
+          highlights: [[0,1],[1,2]],
+          rows: [
+            ["Actual: Not Promoted", "12,388", "105"],
+            ["Actual: Promoted", "1,727", "237"]
+          ]
+        },
+        {
+          type: "reportGrid",
+          title: "Model Selection Flow: Full Classification Results",
+          subtitle: "Full PDF-style classification reports for class 0 and class 1, plus macro and weighted averages, across both R&D and Sales & Marketing.",
+          span: 12,
           groups: [
-            { label: "R&D RF Grid", values: [{ value: 81 }, { value: 61 }, { value: 68 }] },
-            { label: "R&D GB Grid", values: [{ value: 82 }, { value: 64 }, { value: 66 }] },
-            { label: "Sales RF Grid", values: [{ value: 87 }, { value: 69 }, { value: 52 }] },
-            { label: "Sales GB Grid", values: [{ value: 15 }, { value: 14 }, { value: 90 }] }
+            {
+              label: "R&D Department",
+              summary: "R&D models are stable around 81% accuracy, with Gradient Boosting GridSearchCV the highest by accuracy.",
+              models: [
+                {
+                  family: "Random Forest",
+                  name: "Default",
+                  accuracy: "80.1%",
+                  rows: [
+                    { class: "0", precision: "0.84", recall: "0.92", f1: "0.88", support: "769" },
+                    { class: "1", precision: "0.56", recall: "0.36", f1: "0.43", support: "210" },
+                    { class: "macro avg", precision: "0.70", recall: "0.64", f1: "0.66", support: "979" },
+                    { class: "weighted avg", precision: "0.78", recall: "0.80", f1: "0.78", support: "979" }
+                  ],
+                  note: "Good baseline, but class-1 recall remains modest."
+                },
+                {
+                  family: "Random Forest",
+                  name: "GridSearchCV",
+                  accuracy: "81.1%",
+                  rows: [
+                    { class: "0", precision: "0.84", recall: "0.94", f1: "0.89", support: "769" },
+                    { class: "1", precision: "0.61", recall: "0.33", f1: "0.43", support: "210" },
+                    { class: "macro avg", precision: "0.72", recall: "0.64", f1: "0.66", support: "979" },
+                    { class: "weighted avg", precision: "0.79", recall: "0.81", f1: "0.79", support: "979" }
+                  ],
+                  note: "Better precision and accuracy than default RF."
+                },
+                {
+                  family: "Gradient Boosting",
+                  name: "Default",
+                  accuracy: "81.5%",
+                  rows: [
+                    { class: "0", precision: "0.83", recall: "0.96", f1: "0.89", support: "769" },
+                    { class: "1", precision: "0.65", recall: "0.29", f1: "0.40", support: "210" },
+                    { class: "macro avg", precision: "0.74", recall: "0.62", f1: "0.65", support: "979" },
+                    { class: "weighted avg", precision: "0.79", recall: "0.81", f1: "0.79", support: "979" }
+                  ],
+                  note: "Strongest default model for R&D by accuracy."
+                },
+                {
+                  family: "Gradient Boosting",
+                  name: "GridSearchCV",
+                  accuracy: "81.6%",
+                  rows: [
+                    { class: "0", precision: "0.84", recall: "0.95", f1: "0.89", support: "769" },
+                    { class: "1", precision: "0.64", recall: "0.32", f1: "0.43", support: "210" },
+                    { class: "macro avg", precision: "0.74", recall: "0.64", f1: "0.66", support: "979" },
+                    { class: "weighted avg", precision: "0.80", recall: "0.82", f1: "0.79", support: "979" }
+                  ],
+                  note: "Highest R&D accuracy, but recall for promoted employees is still limited."
+                }
+              ]
+            },
+            {
+              label: "Sales & Marketing Department",
+              summary: "Sales behaves differently: RF GridSearchCV is the champion, while Gradient Boosting over-predicts promotions.",
+              models: [
+                {
+                  family: "Random Forest",
+                  name: "Default",
+                  accuracy: "84.4%",
+                  rows: [
+                    { class: "0", precision: "0.88", recall: "0.94", f1: "0.91", support: "12,493" },
+                    { class: "1", precision: "0.38", recall: "0.22", f1: "0.27", support: "1,964" },
+                    { class: "macro avg", precision: "0.63", recall: "0.58", f1: "0.59", support: "14,457" },
+                    { class: "weighted avg", precision: "0.82", recall: "0.84", f1: "0.83", support: "14,457" }
+                  ],
+                  note: "Solid overall accuracy, weak class-1 precision and recall."
+                },
+                {
+                  family: "Random Forest",
+                  name: "GridSearchCV",
+                  accuracy: "87.3%",
+                  champion: true,
+                  rows: [
+                    { class: "0", precision: "0.88", recall: "0.99", f1: "0.93", support: "12,493" },
+                    { class: "1", precision: "0.69", recall: "0.12", f1: "0.21", support: "1,964" },
+                    { class: "macro avg", precision: "0.79", recall: "0.56", f1: "0.57", support: "14,457" },
+                    { class: "weighted avg", precision: "0.85", recall: "0.87", f1: "0.83", support: "14,457" }
+                  ],
+                  note: "Best Sales accuracy and class-1 precision; conservative on promotion flags."
+                },
+                {
+                  family: "Gradient Boosting",
+                  name: "Default",
+                  accuracy: "23.8%",
+                  rejected: true,
+                  rows: [
+                    { class: "0", precision: "0.89", recall: "0.14", f1: "0.24", support: "12,493" },
+                    { class: "1", precision: "0.14", recall: "0.89", f1: "0.24", support: "1,964" },
+                    { class: "macro avg", precision: "0.51", recall: "0.51", f1: "0.24", support: "14,457" },
+                    { class: "weighted avg", precision: "0.78", recall: "0.24", f1: "0.24", support: "14,457" }
+                  ],
+                  note: "High class-1 recall, but unusable because false positives dominate."
+                },
+                {
+                  family: "Gradient Boosting",
+                  name: "GridSearchCV",
+                  accuracy: "16.5%",
+                  rejected: true,
+                  rows: [
+                    { class: "0", precision: "0.86", recall: "0.04", f1: "0.08", support: "12,493" },
+                    { class: "1", precision: "0.14", recall: "0.96", f1: "0.24", support: "1,964" },
+                    { class: "macro avg", precision: "0.50", recall: "0.50", f1: "0.16", support: "14,457" },
+                    { class: "weighted avg", precision: "0.76", recall: "0.16", f1: "0.10", support: "14,457" }
+                  ],
+                  note: "Very high class-1 recall, but it flags too many non-promotions."
+                }
+              ]
+            }
           ]
         },
         {
           type: "horizontalBar",
-          title: "Top Promotion Predictors",
-          subtitle: "Training score, age, service length, previous-year rating, KPI, and awards are the practical factors to monitor before nominations.",
+          title: "Top Promotion Predictors (Random Forest)",
+          subtitle: "Training score, age, and tenure are the top three drivers; KPI and awards add marginal signal.",
+          span: 12,
           unit: "%",
           values: [
             { label: "Avg training score", value: 31 },
@@ -774,8 +1036,8 @@ var caseStudies = [
         },
         {
           label: "Modeling",
-          title: "Accuracy alone is not enough",
-          text: "Gradient Boosting in Sales & Marketing catches many true promotions but creates too many false positives, making precision a business-critical metric."
+          title: "GridSearchCV + F2 score selected the champion",
+          text: "I tuned RF and GB across 27+ parameter combinations with 5-fold cross-validation, selecting the champion by F2 score — weighting recall 2× over precision because missing a promotion candidate hurts more than a false flag."
         }
       ],
       recommendations: [
