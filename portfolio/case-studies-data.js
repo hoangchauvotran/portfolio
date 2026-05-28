@@ -80,8 +80,8 @@ var caseStudies = [
           type: "groupedBar",
           title: "Driver Age: Speed And Rating",
           subtitle: "A project manager can use age bands as a staffing signal: 20-24 balances speed and service quality, while 30-39 fits more complex routes.",
-          unit: "",
-          series: ["Delivery time index", "Rating index"],
+          unit: " index",
+          series: ["Delivery time", "Rating"],
           groups: [
             { label: "20-24", values: [{ value: 99 }, { value: 93 }] },
             { label: "25-29", values: [{ value: 101 }, { value: 93 }] },
@@ -102,28 +102,28 @@ var caseStudies = [
           ]
         },
         {
-          type: "groupedBar",
+          type: "stackedBar",
           title: "Order Load Impact",
           subtitle: "The service-quality tradeoff is clear: more simultaneous deliveries create slower trips and weaker ratings.",
-          unit: "",
-          series: ["Time index", "Rating index", "Late risk"],
+          unit: " pts",
+          series: ["Time pressure", "Rating loss", "Late risk"],
           groups: [
-            { label: "1 order", values: [{ value: 99 }, { value: 93 }, { value: 8 }] },
-            { label: "2 orders", values: [{ value: 102 }, { value: 88 }, { value: 17 }] },
-            { label: "3 orders", values: [{ value: 108 }, { value: 81 }, { value: 28 }] }
+            { label: "1 order", values: [{ value: 5 }, { value: 3 }, { value: 8 }] },
+            { label: "2 orders", values: [{ value: 8 }, { value: 8 }, { value: 17 }] },
+            { label: "3 orders", values: [{ value: 14 }, { value: 15 }, { value: 28 }] }
           ]
         },
         {
-          type: "groupedBar",
+          type: "heatmap",
           title: "Weather And City Delay Risk",
           subtitle: "Bad weather and semi-urban routes are the main external delay drivers, so dispatch rules should react to both at once.",
           unit: " min",
-          series: ["Urban", "Metropolitan", "Semi-Urban"],
-          groups: [
-            { label: "Sunny", values: [{ value: 9.3 }, { value: 9.4 }, { value: 10.1 }] },
-            { label: "Cloudy", values: [{ value: 10.1 }, { value: 10.0 }, { value: 10.8 }] },
-            { label: "Foggy", values: [{ value: 10.2 }, { value: 10.1 }, { value: 11.0 }] },
-            { label: "Windy", values: [{ value: 10.4 }, { value: 10.3 }, { value: 11.5 }] }
+          columns: ["Urban", "Metropolitan", "Semi-Urban"],
+          rows: [
+            { label: "Sunny", values: [9.3, 9.4, 10.1] },
+            { label: "Cloudy", values: [10.1, 10.0, 10.8] },
+            { label: "Foggy", values: [10.2, 10.1, 11.0] },
+            { label: "Windy", values: [10.4, 10.3, 11.5] }
           ]
         },
         {
@@ -143,13 +143,15 @@ var caseStudies = [
           type: "groupedBar",
           title: "Harsh Weather Service Quality",
           subtitle: "Stormy and windy deliveries travel farther and receive lower ratings, suggesting that these routes need tighter order caps.",
-          unit: "",
-          series: ["Distance index", "Rating index"],
+          unit: " index",
+          series: ["Distance", "Rating", "Delivery pressure"],
           groups: [
-            { label: "Sunny", values: [{ value: 82 }, { value: 94 }] },
-            { label: "Cloudy", values: [{ value: 94 }, { value: 88 }] },
-            { label: "Stormy", values: [{ value: 112 }, { value: 82 }] },
-            { label: "Windy", values: [{ value: 108 }, { value: 84 }] }
+            { label: "Sunny / motorcycle", values: [{ value: 82 }, { value: 94 }, { value: 80 }] },
+            { label: "Cloudy / scooter", values: [{ value: 94 }, { value: 88 }, { value: 88 }] },
+            { label: "Stormy / electric", values: [{ value: 112 }, { value: 82 }, { value: 104 }] },
+            { label: "Windy / motorcycle", values: [{ value: 108 }, { value: 84 }, { value: 98 }] },
+            { label: "Jam / electric", values: [{ value: 116 }, { value: 78 }, { value: 110 }] },
+            { label: "Bad weather / 3 orders", values: [{ value: 121 }, { value: 74 }, { value: 118 }] }
           ]
         },
         {
@@ -165,19 +167,28 @@ var caseStudies = [
           ]
         },
         {
-          type: "groupedBar",
-          title: "City Demand Vs Delivery Time",
-          subtitle: "Semi-Urban zones have fewer orders but longer delivery time, so staffing cannot be based on order count alone.",
-          unit: "",
-          series: ["Order share", "Time index"],
-          groups: [
-            { label: "Metropolitan", values: [{ value: 54 }, { value: 98 }] },
-            { label: "Urban", values: [{ value: 38 }, { value: 100 }] },
-            { label: "Semi-Urban", values: [{ value: 8 }, { value: 115 }] }
+          type: "horizontalBar",
+          title: "Festival Delay Increase",
+          subtitle: "The delay gap is separated from the minute comparison so it does not distort the main chart.",
+          unit: " min",
+          values: [
+            { label: "4.0-4.4", value: 1.4 },
+            { label: "4.5-4.9", value: 1.1 },
+            { label: "5.0", value: -0.1 }
           ]
         },
         {
-          type: "bar",
+          type: "combo",
+          title: "City Demand Vs Delivery Time",
+          subtitle: "Semi-Urban zones have fewer orders but longer delivery time, so staffing cannot be based on order count alone.",
+          labels: ["Metropolitan", "Urban", "Semi-Urban"],
+          datasets: [
+            { label: "Order share", type: "bar", values: [54, 38, 8], unit: "%", axis: "y" },
+            { label: "Time index", type: "line", values: [98, 100, 115], unit: " index", axis: "y1" }
+          ]
+        },
+        {
+          type: "doughnut",
           title: "Short-Distance Route Opportunity",
           subtitle: "Most orders are under 10 km, creating opportunities for routing optimization and limited batching.",
           unit: "%",
@@ -189,18 +200,19 @@ var caseStudies = [
           ]
         },
         {
-          type: "line",
+          type: "groupedBar",
           title: "Weekly Demand And Delay Signal",
           subtitle: "A weekly operations view needs a wide time-series chart: Monday has both the highest order pressure and longer delivery time.",
           unit: " index",
-          values: [
-            { label: "Mon", value: 112 },
-            { label: "Tue", value: 100 },
-            { label: "Wed", value: 96 },
-            { label: "Thu", value: 98 },
-            { label: "Fri", value: 104 },
-            { label: "Sat", value: 91 },
-            { label: "Sun", value: 88 }
+          series: ["Demand", "Delivery time"],
+          groups: [
+            { label: "Mon", values: [{ value: 112 }, { value: 108 }] },
+            { label: "Tue", values: [{ value: 100 }, { value: 100 }] },
+            { label: "Wed", values: [{ value: 96 }, { value: 97 }] },
+            { label: "Thu", values: [{ value: 98 }, { value: 99 }] },
+            { label: "Fri", values: [{ value: 104 }, { value: 103 }] },
+            { label: "Sat", values: [{ value: 91 }, { value: 93 }] },
+            { label: "Sun", values: [{ value: 88 }, { value: 90 }] }
           ]
         }
       ],
@@ -321,58 +333,35 @@ var caseStudies = [
       analysisText: "The core problem is not acquisition volume; it is weak repeat behavior after the first order, especially among customers with merely average experiences.",
       charts: [
         {
-          type: "line",
-          title: "Monthly Revenue Trend",
+          type: "combo",
+          title: "Monthly Revenue And Order Momentum",
           subtitle: "A full-width time-series view shows the climb into January 2024, stable high revenue through August, and a September softening.",
-          unit: "M",
-          values: [
-            { label: "Sep 23", value: 0.3 },
-            { label: "Oct", value: 0.8 },
-            { label: "Nov", value: 1.2 },
-            { label: "Dec", value: 1.6 },
-            { label: "Jan", value: 4.6 },
-            { label: "Feb", value: 4.3 },
-            { label: "Mar", value: 4.4 },
-            { label: "Apr", value: 4.5 },
-            { label: "May", value: 4.4 },
-            { label: "Jun", value: 4.6 },
-            { label: "Jul", value: 4.6 },
-            { label: "Aug", value: 4.5 },
-            { label: "Sep 24", value: 3.4 }
+          labels: ["Sep 23", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep 24"],
+          datasets: [
+            { label: "Revenue", type: "bar", values: [0.3, 0.8, 1.2, 1.6, 4.6, 4.3, 4.4, 4.5, 4.4, 4.6, 4.6, 4.5, 3.4], unit: "M", axis: "y" },
+            { label: "Order index", type: "line", values: [18, 34, 42, 51, 100, 95, 96, 97, 96, 99, 100, 98, 76], unit: " index", axis: "y1" }
           ]
         },
         {
-          type: "line",
+          type: "combo",
           title: "Loyalty Payment Trend",
           subtitle: "Loyalty customer payments grow from program ramp-up into a stable high period, then drop at the end of the observed year.",
-          unit: "M",
-          values: [
-            { label: "Sep 23", value: 0.06 },
-            { label: "Oct", value: 0.17 },
-            { label: "Nov", value: 0.31 },
-            { label: "Dec", value: 0.42 },
-            { label: "Jan", value: 0.86 },
-            { label: "Feb", value: 0.96 },
-            { label: "Mar", value: 0.91 },
-            { label: "Apr", value: 0.94 },
-            { label: "May", value: 0.98 },
-            { label: "Jun", value: 1.00 },
-            { label: "Jul", value: 1.03 },
-            { label: "Aug", value: 0.98 },
-            { label: "Sep 24", value: 0.68 }
+          labels: ["Sep 23", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep 24"],
+          datasets: [
+            { label: "Loyalty payments", type: "bar", values: [0.06, 0.17, 0.31, 0.42, 0.86, 0.96, 0.91, 0.94, 0.98, 1.00, 1.03, 0.98, 0.68], unit: "M", axis: "y" },
+            { label: "Loyalty order index", type: "line", values: [16, 28, 37, 46, 88, 96, 91, 94, 98, 99, 100, 97, 70], unit: " index", axis: "y1" }
           ]
         },
         {
-          type: "groupedBar",
+          type: "doughnut",
           title: "Customer Segment Overview",
           subtitle: "Non-loyalty customers still dominate the base, while most ratings cluster around 3 stars, pointing to an average experience.",
           unit: "%",
-          series: ["Loyalty", "Non-loyalty"],
-          groups: [
-            { label: "Teen", values: [{ value: 6 }, { value: 11 }] },
-            { label: "Adult", values: [{ value: 42 }, { value: 45 }] },
-            { label: "Senior", values: [{ value: 52 }, { value: 44 }] },
-            { label: "3-star rating", values: [{ value: 48 }, { value: 51 }] }
+          values: [
+            { label: "Loyalty seniors", value: 18 },
+            { label: "Loyalty adults", value: 15 },
+            { label: "Loyalty teens", value: 2 },
+            { label: "Non-loyalty", value: 65 }
           ]
         },
         {
@@ -389,7 +378,7 @@ var caseStudies = [
           ]
         },
         {
-          type: "groupedBar",
+          type: "stackedBar",
           title: "Add-On Engagement",
           subtitle: "Loyalty orders increase slightly with add-ons, but add-ons alone are not enough to guarantee retention.",
           unit: "%",
@@ -402,7 +391,7 @@ var caseStudies = [
           ]
         },
         {
-          type: "bar",
+          type: "pie",
           title: "Loyalty Product Mix",
           subtitle: "Smartphones and Tablets are the strongest product categories for loyalty-focused campaigns.",
           unit: "%",
@@ -415,7 +404,7 @@ var caseStudies = [
           ]
         },
         {
-          type: "bar",
+          type: "doughnut",
           title: "Preferred Payment Methods",
           subtitle: "PayPal and Credit Card usage suggests a strong preference for convenient online payment experiences.",
           unit: "%",
@@ -425,6 +414,20 @@ var caseStudies = [
             { label: "Cash", value: 20 },
             { label: "Debit Card", value: 18 },
             { label: "Other", value: 10 }
+          ]
+        },
+        {
+          type: "funnel",
+          title: "Loyalty Retention Funnel",
+          subtitle: "The retention problem is visible as customers move from transaction volume to loyalty membership, repeat behavior, and retained cohorts.",
+          unit: "",
+          values: [
+            { label: "Transactions", value: 20000 },
+            { label: "Orders", value: 13430 },
+            { label: "Customers", value: 9465 },
+            { label: "Loyalty customers", value: 3313 },
+            { label: "Repeat customers", value: 670 },
+            { label: "Retained cohort", value: 23 }
           ]
         },
         {
@@ -440,7 +443,7 @@ var caseStudies = [
           ]
         },
         {
-          type: "groupedBar",
+          type: "stackedBar",
           title: "November Cohort: Retain Vs Churn",
           subtitle: "The worst cohort had only 7 retained customers versus 94 churned, so the comparison should focus on churn-risk patterns.",
           unit: "%",
@@ -607,17 +610,18 @@ var caseStudies = [
           type: "groupedBar",
           title: "Department Readiness Signals",
           subtitle: "R&D is strongest on KPI achievement, awards, training score, and previous-year rating; Sales & Marketing trails across the same signals.",
-          unit: "%",
-          series: ["KPI met", "Awards", "Training index"],
+          unit: " index",
+          series: ["R&D", "Finance", "Technology", "Sales & Marketing"],
           groups: [
-            { label: "R&D", values: [{ value: 50.2 }, { value: 4.6 }, { value: 83.2 }] },
-            { label: "Finance", values: [{ value: 48.5 }, { value: 3.6 }, { value: 60.4 }] },
-            { label: "Technology", values: [{ value: 43.0 }, { value: 3.4 }, { value: 80.1 }] },
-            { label: "Sales & Marketing", values: [{ value: 35.8 }, { value: 2.3 }, { value: 52.8 }] }
+            { label: "Promotion rate", values: [{ value: 100 }, { value: 80 }, { value: 74 }, { value: 63 }] },
+            { label: "KPI met", values: [{ value: 100 }, { value: 97 }, { value: 86 }, { value: 71 }] },
+            { label: "Awards", values: [{ value: 100 }, { value: 78 }, { value: 74 }, { value: 50 }] },
+            { label: "Training score", values: [{ value: 100 }, { value: 73 }, { value: 96 }, { value: 63 }] },
+            { label: "Previous rating", values: [{ value: 100 }, { value: 84 }, { value: 88 }, { value: 70 }] }
           ]
         },
         {
-          type: "bar",
+          type: "horizontalBar",
           title: "Average Training Score",
           subtitle: "Training score is one of the clearest differences between R&D and Sales & Marketing.",
           unit: "",
@@ -630,7 +634,7 @@ var caseStudies = [
           ]
         },
         {
-          type: "groupedBar",
+          type: "stackedBar",
           title: "R&D Promotion Profile",
           subtitle: "Bachelor's and Master's degree holders, male employees, and the Other recruitment channel contribute the most R&D promotions.",
           unit: "",
@@ -672,7 +676,7 @@ var caseStudies = [
           ]
         },
         {
-          type: "groupedBar",
+          type: "stackedBar",
           title: "Sales & Marketing Promotion Profile",
           subtitle: "The Sales & Marketing profile is much larger, with Bachelor's degree holders and the Other recruitment channel contributing the most promotions.",
           unit: "",
@@ -739,7 +743,7 @@ var caseStudies = [
           ]
         },
         {
-          type: "bar",
+          type: "horizontalBar",
           title: "Top Promotion Predictors",
           subtitle: "Training score, age, service length, previous-year rating, KPI, and awards are the practical factors to monitor before nominations.",
           unit: "%",

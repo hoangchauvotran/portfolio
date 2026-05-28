@@ -8,15 +8,12 @@ __pycache__/
 *.pyo
 
 # Source materials (PDF prompts, design guides, CV source)
-DA CV update.pdf
-mood and tont.pdf
-project 1.pdf
-project 2.pdf
-project 3.pdf
-prompt_codex.txt
+/DA CV update.pdf
+/mood and tont.pdf
+/project 1.pdf
+/project 2.pdf
+/project 3.pdf
+/prompt_codex.txt
 
-# Python dashboard generator (source only, output is in portfolio/)
-compensation-dashboard/__pycache__/
-compensation-dashboard/generate_dashboard.py
-compensation-dashboard/tests/
-compensation-dashboard/compensation_simulated_data.csv
+# Root-level Python dashboard source (deployed version is in portfolio/)
+/compensation-dashboard/

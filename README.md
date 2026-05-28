@@ -1,46 +1,45 @@
 # Vo Tran Hoang Chau — Data Analyst Portfolio
 
-Portfolio website cá nhân của **Võ Trần Hoàng Châu** — Data Analyst chuyên về Finance, Banking & Compensation Analytics.
+Portfolio website cá nhân của **Võ Trần Hoàng Châu** — Data Analyst chuyên Finance, Banking & Compensation Analytics.
 
-## Công nghệ sử dụng
+## Công nghệ
 
 - HTML / CSS / JavaScript thuần (static site)
 - Chart.js (compensation dashboard tương tác)
-- Python + Pandas (sinh dữ liệu dashboard mô phỏng)
+- Python + Pandas (sinh dữ liệu mô phỏng)
 
 ## Cấu trúc thư mục
 
 ```
-portfolio/                    # Website chính (deploy target)
-├── assets/                   # Hình ảnh, logo, CV PDF, project files
-├── compensation-dashboard/   # Interactive compensation dashboard (Chart.js)
-├── projects/                 # 3 trang case study chi tiết
-├── case-studies-data.js      # Dữ liệu case studies
-├── case-studies-renderer.js  # Renderer cho case studies
-├── project-detail-renderer.js# Renderer cho project detail
-├── index.html                # Entry point
-├── main.js                   # Logic chính
-└── style.css                 # Stylesheet
-
-portfolio-case-studies/       # Standalone case study modules (bản phụ)
-compensation-dashboard/       # Python source cho dashboard generator
+.
+├── .gitignore
+├── README.md
+├── portfolio/                    # Website chính (root deploy)
+│   ├── assets/                   # Hình ảnh, logo, CV PDF
+│   ├── compensation-dashboard/   # Dashboard tương tác (Chart.js)
+│   ├── projects/                 # Case study chi tiết (3 projects)
+│   ├── case-studies-data.js
+│   ├── case-studies-renderer.js
+│   ├── project-detail-renderer.js
+│   ├── index.html
+│   ├── main.js
+│   └── style.css
+└── portfolio-case-studies/       # Standalone case study modules
 ```
 
 ## Chạy local
-
-Mở trực tiếp file `portfolio/index.html` trên trình duyệt, hoặc dùng:
 
 ```bash
 python3 -m http.server 8000 -d portfolio
 ```
 
-Truy cập: http://localhost:8000
+Mở http://localhost:8000
 
-## Deploy lên Vercel
+## Deploy (Vercel)
 
-1. Import repo từ GitHub tại [vercel.com/new](https://vercel.com/new)
-2. Chọn **Root Directory**: `portfolio`
-3. Framework Preset: **Other**
+1. Import repo tại [vercel.com/new](https://vercel.com/new)
+2. **Root Directory**: `portfolio`
+3. **Framework**: Other
 4. Deploy
 
 ## Liên hệ

@@ -1260,9 +1260,9 @@ h2 {
 
 .case-heat-row {
   display: grid;
-  grid-template-columns: 76px repeat(7, minmax(42px, 1fr));
+  grid-template-columns: 76px repeat(var(--heat-columns, 7), minmax(42px, 1fr));
   gap: 8px;
-  min-width: 520px;
+  min-width: min(620px, calc(92px + (var(--heat-columns, 7) * 68px)));
   align-items: center;
 }
 
@@ -1273,7 +1273,8 @@ h2 {
   font-weight: 950;
 }
 
-.case-heatmap button {
+.case-heatmap button,
+.case-heat-row i {
   display: grid;
   min-height: 42px;
   place-items: center;
@@ -1282,6 +1283,10 @@ h2 {
   color: var(--case-dark);
   font-size: 12px;
   font-weight: 950;
+  font-style: normal;
+}
+
+.case-heatmap button {
   cursor: pointer;
 }
 
@@ -1312,6 +1317,47 @@ h2 {
 .case-model-table .model-name {
   color: var(--case-dark);
   font-weight: 950;
+}
+
+.case-funnel {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+  min-height: 300px;
+}
+
+.case-funnel-step {
+  display: grid;
+  grid-template-columns: minmax(120px, .35fr) minmax(180px, 1fr) 56px;
+  gap: 12px;
+  align-items: center;
+}
+
+.case-funnel-step span,
+.case-funnel-step b {
+  color: var(--case-muted);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.case-funnel-step b {
+  text-align: right;
+}
+
+.case-funnel-step i {
+  display: grid;
+  min-height: 38px;
+  place-items: center;
+  justify-self: center;
+  border-radius: 6px;
+  color: var(--case-on-dark);
+  font-style: normal;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+}
+
+.case-funnel-step strong {
+  color: inherit;
+  font-size: 13px;
 }
 
 .insight-panel {
@@ -1545,13 +1591,23 @@ h2 {
 }
 
 .case-workspace .chart-line,
+.case-workspace .chart-combo,
+.case-workspace .chart-radar,
+.case-workspace .chart-scatter,
+.case-workspace .chart-bubble,
+.case-workspace .chart-funnel,
 .case-workspace .chart-heatmap,
 .case-workspace .chart-table,
 .case-workspace .chart-panel.is-wide {
   grid-column: 1 / -1;
 }
 
-.case-workspace .chart-line {
+.case-workspace .chart-line,
+.case-workspace .chart-combo,
+.case-workspace .chart-radar,
+.case-workspace .chart-scatter,
+.case-workspace .chart-bubble,
+.case-workspace .chart-funnel {
   min-height: 430px;
 }
 
@@ -1569,13 +1625,52 @@ h2 {
   text-align: center;
 }
 
-.case-workspace .chart-groupedBar {
+.case-workspace .chart-groupedBar,
+.case-workspace .chart-stackedBar {
   min-height: 440px;
 }
 
 .case-workspace .chart-groupedBar .case-grouped-chart {
   grid-template-columns: repeat(var(--chart-groups), minmax(72px, 1fr));
   overflow-x: auto;
+}
+
+.chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 260px;
+}
+
+.chart-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 340px;
+}
+
+.case-workspace .chart-groupedBar .chart-canvas-wrap,
+.case-workspace .chart-stackedBar .chart-canvas-wrap,
+.case-workspace .chart-combo .chart-canvas-wrap,
+.case-workspace .chart-scatter .chart-canvas-wrap,
+.case-workspace .chart-bubble .chart-canvas-wrap,
+.case-workspace .chart-radar .chart-canvas-wrap,
+.case-workspace .chart-funnel .chart-canvas-wrap {
+  min-height: 300px;
+}
+
+.case-workspace .chart-bar .chart-canvas-wrap,
+.case-workspace .chart-horizontalBar .chart-canvas-wrap,
+.case-workspace .chart-pie .chart-canvas-wrap,
+.case-workspace .chart-doughnut .chart-canvas-wrap,
+.case-workspace .chart-polarArea .chart-canvas-wrap {
+  min-height: 300px;
+}
+
+.case-workspace .chart-pie .chart-canvas-wrap,
+.case-workspace .chart-doughnut .chart-canvas-wrap,
+.case-workspace .chart-polarArea .chart-canvas-wrap,
+.case-workspace .chart-radar .chart-canvas-wrap {
+  max-width: 620px;
+  margin: 0 auto;
 }
 
 .case-study-page .case-analysis-grid,
@@ -2015,11 +2110,16 @@ h2 {
   }
 
   .case-workspace .chart-panel,
-  .case-workspace .chart-line,
-  .case-workspace .chart-heatmap,
-  .case-workspace .chart-table {
-    grid-column: 1 / -1;
-  }
+.case-workspace .chart-combo,
+.case-workspace .chart-funnel,
+.case-workspace .chart-scatter,
+.case-workspace .chart-bubble,
+.case-workspace .chart-line,
+.case-workspace .chart-heatmap,
+.case-workspace .chart-table,
+.case-workspace .chart-panel.is-wide {
+  grid-column: 1 / -1;
+}
 
   .case-filter-bar {
     align-items: flex-start;
